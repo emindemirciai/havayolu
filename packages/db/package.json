@@ -1,0 +1,32 @@
+{
+  "name": "@ucus/db",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/cli/migrate.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.3",
+    "ioredis": "6.0.0",
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {
+    "@types/node": "24.x",
+    "drizzle-kit": "0.31.11",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.1"
+  }
+}

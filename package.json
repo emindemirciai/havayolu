@@ -1,6 +1,6 @@
 {
   "name": "ucus-takip",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -9,7 +9,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "turbo run dev --filter=@ucus/web --filter=@ucus/api",
+    "dev": "turbo run dev --filter=@ucus/web --filter=@ucus/api --filter=@ucus/worker",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
@@ -22,8 +22,12 @@
     "stats": "tsx scripts/stats.mts",
     "backup": "tsx scripts/backup.mts",
     "check:eol": "tsx scripts/check-eol.mts",
-    "ci:full": "pnpm run ci:local",
-    "typecheck:scripts": "tsc -p scripts/tsconfig.json"
+    "ci:full": "pnpm run ci:local && pnpm run compose:guard && pnpm run test:integration",
+    "typecheck:scripts": "tsc -p scripts/tsconfig.json",
+    "test:integration": "turbo run test:integration --concurrency=1",
+    "dev:infra": "docker compose -f docker-compose.dev.yml up -d --wait --wait-timeout 300",
+    "dev:infra:down": "docker compose -f docker-compose.dev.yml down",
+    "compose:guard": "tsx scripts/compose-guard.mts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

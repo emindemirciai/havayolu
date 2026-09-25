@@ -9,7 +9,7 @@ Durumlar: `[ ]` başlamadı, `[~]` sürüyor, `[k]` kod bitti ve kullanıcı do�
 | # | Kilometre taşı | Dal | Durum | Birleşen PR |
 |---|---|---|---|---|
 | M0 | Repo iskeleti, yerel test ortamı, Durum ve Yenilikler | `p1/m0-skeleton` | [k] kod bitti; repo oluşturulunca push + PR + birleştirme | — |
-| M1a | İmajlar, bütün servisler, yönetici oturumu, admin Servisler paneli | `p1/m1a-images` | [ ] | — |
+| M1a | İmajlar, bütün servisler, yönetici oturumu, admin Servisler paneli | `p1/m1a-images` | [k] kod bitti; repo oluşturulunca push + PR | — |
 | M1b | Yayın hattı (CI, deploy, rollback, DEPLOY_DOKPLOY.md) | `p1/m1b-deploy` | [ ] | — |
 | M2 | Veritabanı ve referans verisi | `p1/m2-db` | [ ] | — |
 | M3 | Sağlayıcılar | `p1/m3-providers` | [ ] | — |
@@ -48,5 +48,15 @@ Durumlar: `[ ]` başlamadı, `[~]` sürüyor, `[k]` kod bitti ve kullanıcı do�
 - `pnpm dev` → web :3100, api :4100. `/durum` 200, API "Çalışıyor", `/version` `{app:"ucus-takip",version:"0.2.0"}`; `/dil?to=en` → `/yenilikler` İngilizce; konsol hatası yok.
 - `pnpm stats` → 90 dosya, 4.828 satır (2.062 kod).
 
-## M1a–M7
+## M1a — Bütün servisler, yönetici oturumu, Servisler paneli
+**Çıktı kaydı (2026-09-25):**
+- `turbo run lint typecheck test build` → 28/28 görev; birim testleri: api 28, worker 7, web 5, shared 5, i18n 4, geo 7, providers 4.
+- `pnpm dev:infra` → PostGIS 18-3.6, Redis 8.10.2 ×2, Mailpit v1.31.2 healthy.
+- `pnpm test:integration` → db 2/2 (migration + eşzamanlı advisory lock), api 3/3 (Redis oturum deposu, heartbeat, gerçek /ready + giriş).
+- `pnpm compose:guard` → 8 servis, kurallar tamam.
+- Yerel üretim compose (`ut-localprod`, imajlar kaynaktan): 7 servis healthy, `ut-migrate` 0 ile çıktı; PostGIS 3.6.4; PGDATA `/var/lib/postgresql/18/docker`; isimsiz volume yok; web → api iç ağ ✓; iki worker heartbeat'i Redis'te; boşta toplam ~270 MB. İmajlar: web 387 MB, api 341 MB, worker 336 MB.
+- Tarayıcı: `/admin` → giriş ekranına yönlendirme ✓; Servisler paneli bütün servisleri gerçek veriyle gösterdi (curl + oturum çereziyle); onay bandı: onaysız script yok, "Kabul et" → script doğru `src` ve `data-site` ile yüklendi, "Reddet" → yüklenmedi; admin sayfalarında bant yok.
+- Not: onay akışının otomatik E2E testi Playwright ile M6'da eklenir (bu kilometre taşında elle doğrulandı).
+
+## M1b–M7
 Ayrıntılar `docs/prompts/parca-1.md`'dedir. Her kilometre taşına başlarken bu dosyaya dizinler ve kabul komutları eklenir.

@@ -33,7 +33,8 @@ FR24 premium benzeri derinlik: canlı harita, uçuş detayı, grafikler, geçmi�
 - **Veri:** PostgreSQL + PostGIS (Drizzle). İki Redis: `redis-queue` (BullMQ, kalıcı) ve `redis-live` (anlık durum, kalıcı değil).
 - **Paketler:**
   - `shared`: tipler, zod, changelog, yol haritası, harita katman stilleri, tasarım token'ları
-  - `i18n`, `geo`, `providers`, `db`
+  - `i18n`, `geo`, `providers`
+  - `db`: veri depoları: PostgreSQL (Drizzle, migration) ve Redis istemcisi, heartbeat
   - `engine`: saf, IO yok
   - `tools/`: yalnızca dev/test
 - **Yayın:** GitHub Actions imajları derler → GHCR → Dokploy (Hostinger KVM 2, **başka projelerle paylaşılır**) yalnızca imaj çeker. VPS'te build yapılmaz.
@@ -123,7 +124,7 @@ Sıra: 1–4 commit'ten önce yapılır ve aynı commit'e girer. 5 commit'ten so
 
 ## Kalite çıtası
 - **Üretim kodu** = üretim imajına giren her şey (`apps/*/src`, `packages/*/src`). Üretim kodunda TODO/FIXME, "sonra yapılacak" notu, sahte buton, placeholder sayfa, mock veri ve mock API yoktur (`no-warning-comments: error`, `--max-warnings 0`).
-- **Testler** (`**/*.test.ts`, `**/test/**`, `e2e/`, `tools/`, `**/fixtures/**`) stub HTTP sunucusu, commit'li fixture, Mailpit, MinIO ve Turnstile stub'ını kullanabilir. Üretim kodu bunları import edemez (`no-restricted-imports`).
+- **Testler** (`**/*.test.ts`, `**/test/**`, `e2e/`, `tools/`, `**/fixtures/**`) stub HTTP sunucusu, commit'li fixture, Mailpit, S3 emülatörü (Parça 2 M9'da seçilir) ve Turnstile stub'ını kullanabilir. Üretim kodu bunları import edemez (`no-restricted-imports`).
 - **CI, testler ve `pnpm dev` canlı harici servise istek atmaz.** `EXTERNAL_PROVIDERS_DISABLED=true` (`.env.example` varsayılanı) şunları kapatır:
   - adsb.lol, OurAirports, VRS aynası, aviationweather
   - OpenFreeMap (testte yerel `test-style.json`)
@@ -172,9 +173,14 @@ Sıra: 1–4 commit'ten önce yapılır ve aynı commit'e girer. 5 commit'ten so
 | `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm build` | Tekil kontroller |
 | `pnpm check:eol` | Depoda CRLF'li metin dosyası olmadığını doğrular |
 | `pnpm typecheck:scripts` | `scripts/*.mts` tip denetimi |
+| `pnpm dev:infra` · `pnpm dev:infra:down` | Yerel PostGIS, iki Redis ve Mailpit (Docker) |
+| `pnpm test:integration` | Gerçek PostgreSQL/Redis testleri (önce `dev:infra`) |
+| `pnpm compose:guard` | Üretim compose kurallarını denetler (Docker gerekir) |
 | `pnpm format` | Prettier ile biçimlendirir |
 | `pnpm changelog` · `pnpm changelog:check` | CHANGELOG.md üretir · sürüm ve changelog tutarlılığını denetler |
 | `pnpm stats` | Satır sayısı |
 | `pnpm backup` | Temiz zip yedek |
 
-Sonraki kilometre taşları bu tabloya kendi komutlarını ekler: `dev:replay`, `test:integration`, `test:e2e`, `db:migrate`, `db:seed`, `smoke:live`, `record`, `coverage:report`, `coverage:probe`.
+Yerel üretim denemesi: `docker compose -p ut-localprod -f docker-compose.yml -f docker-compose.build.yml --env-file .env.example up -d --build --wait --wait-timeout 300` (sonra aynı komutla `down -v`).
+
+Sonraki kilometre taşları bu tabloya kendi komutlarını ekler: `dev:replay`, `test:e2e`, `db:migrate`, `db:seed`, `smoke:live`, `record`, `coverage:report`, `coverage:probe`.

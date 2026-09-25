@@ -1,0 +1,43 @@
+# Üretim compose'unu yerelde, imajları kaynaktan derleyerek çalıştırmak için katman:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml --env-file .env.example up -d --wait --wait-timeout 300
+# GHCR'dan çekme denenmez (pull_policy: build).
+
+x-build-args: &build-args
+  GIT_SHA: ${GIT_SHA:-dev}
+  BUILD_TIME: ${BUILD_TIME:-}
+
+services:
+  ut-migrate:
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+      args: *build-args
+
+  ut-api:
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      args: *build-args
+
+  ut-web:
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args: *build-args
+
+  ut-worker-rt:
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+      args: *build-args
+
+  ut-worker-bg:
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+      args: *build-args

@@ -8,10 +8,13 @@ import './globals.css'
 import { getMessages } from '@ucus/i18n'
 import { currentVersion } from '@ucus/shared'
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { AnalyticsConsent, ConsentSettingsButton } from '@/components/analytics-consent'
+import { CONSENT_COOKIE, parseConsent } from '@/lib/consent'
 import { LanguageToggle } from '@/components/language-toggle'
-import { appName, getServerEnv } from '@/lib/env'
+import { analyticsConfig, appName, getServerEnv } from '@/lib/env'
 import { getLocale } from '@/lib/locale'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,6 +30,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = await getLocale()
   const t = getMessages(locale)
   const env = getServerEnv()
+  const analytics = analyticsConfig(env)
+  const initialConsent = parseConsent((await cookies()).get(CONSENT_COOKIE)?.value)
 
   return (
     <html lang={locale}>
@@ -48,7 +53,22 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <span>
             {t.footer.codeName}: <span className="mono">ucus-takip</span>
           </span>
+          {analytics ? <ConsentSettingsButton label={t.consent.settings} /> : null}
         </footer>
+        {analytics ? (
+          <AnalyticsConsent
+            trackerUrl={analytics.trackerUrl}
+            siteId={analytics.siteId}
+            initialConsent={initialConsent}
+            secure={env.APP_ENV === 'production'}
+            labels={{
+              title: t.consent.title,
+              body: t.consent.body,
+              accept: t.consent.accept,
+              reject: t.consent.reject,
+            }}
+          />
+        ) : null}
       </body>
     </html>
   )
