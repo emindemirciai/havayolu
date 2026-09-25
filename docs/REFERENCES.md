@@ -21,11 +21,18 @@ Bir şeyi doğrulaman gerekiyorsa önce buradaki kaynakları kullan. Yeni bir ka
 - Dokploy Compose domain'leri: https://docs.dokploy.com/docs/core/docker-compose/domains
 - Dokploy Going Production (CI'da build önerisi): https://docs.dokploy.com/docs/core/applications/going-production
 - Dokploy sürümleri: https://github.com/Dokploy/dokploy/releases
+
+> **Dikkat:** Dokploy dokümanları v0.30.7'nin gerisindedir. Going Production sayfasındaki `dokploy/dokploy-action@v1` yoktur (404) ve action sürümleri eskidir. Domains sayfasındaki "diğer servislere dokploy-network ekle" talimatı v0.27.0'dan beri gereksizdir. Isolated Deployments v0.30.0'da deprecated'dır ve kapalı kalır. Çelişkide `docs/spec/infra.md` geçerlidir.
+
 - GitHub Actions olayları: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
 - dorny/paths-filter: https://github.com/dorny/paths-filter
 - GHCR kimlik doğrulama: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 - Git satır sonları: https://docs.github.com/en/get-started/git-basics/configuring-git-to-handle-line-endings
 - Hostinger swap: https://support.hostinger.com/en/articles/8124185-how-to-set-up-swap-on-hostinger-vps
+
+## Analiz
+- Siteni Analiz Et (kullanıcının kendi uygulaması, MIT): https://github.com/emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-. Giriş sözleşmesi: `src/lib/platformAuth.ts`. Takip script'i: `src/app/api/tracker/route.ts`.
+- KVKK Çerez Uygulamaları Hakkında Rehber: https://www.kvkk.gov.tr/
 
 ## Kütüphaneler
 - Node sürüm takvimi: https://github.com/nodejs/Release

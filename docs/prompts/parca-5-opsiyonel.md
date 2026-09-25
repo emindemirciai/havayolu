@@ -7,7 +7,7 @@ ADS-B tarife vermez. FR24 premium'daki şu özellikler yalnızca bir tarife sağ
 - tarifeli/tahmini saatler, rötar
 - kapı/terminal/bagaj
 - kalkış öncesi pano
-- harfli çağrı kodlu seferlerin kalkış öncesi eşleşmesi
+- harfli numaralı çağrı kodlu seferlerin kalkış öncesi eşleşmesi
 
 ## Aday sağlayıcılar (fiyatlar 2026-09, `docs/spec/data-sources.md` §7)
 1. **AeroDataBox:** ~19 $/ay'dan başlar. B2C gösterim izinlidir. İlk aday.
@@ -16,8 +16,8 @@ ADS-B tarife vermez. FR24 premium'daki şu özellikler yalnızca bir tarife sağ
 4. **Flightradar24 API kullanılmaz** (ToS 6.3.1: rakip ürün geliştirmek ve başka kaynağı tamamlamak yasak).
 
 ## Kapsam (başlatıldığında)
-- `ScheduleProvider` uygulaması. Lisans kaydı zorunlu alanları doldurulur: `commercialUse`, `b2cDisplayAllowed`, `mixingWithOtherRealtimeAllowed`, `maxRawStorageDays`. `DATA_USAGE_MODE` denetimi uygulanır.
-- Sefer no → çağrı kodu/tescil çözümleme. Bu, harfli çağrı kodu sorununu çözer ve `pending` takiplerin eşleşmesini hızlandırır.
+- `ScheduleProvider` uygulaması (arayüz Parça 1 M3'te tanımlı). Lisans kaydının 7 alanı (data-sources.md → "Lisans kaydı") eksiksiz doldurulur; `DATA_USAGE_MODE` denetimi uygulanır.
+- Sefer no → çağrı kodu/tescil çözümleme. Bu, harfli numaralı çağrı kodu sorununu çözer ve `pending` takiplerin eşleşmesini hızlandırır.
 - İstasyon panosuna STA/ETA, kapı ve rötar sütunları; kalkış panosu.
 - Ham veri saklama süresi sağlayıcı şartına göre sınırlanır ve ayrı tablolarda tutulur.
 - **Ödeme:**

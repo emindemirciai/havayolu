@@ -1,37 +1,48 @@
 # Parça 1 planı — canlı ilerleme dosyası
 
-Kaynak: `docs/prompts/parca-1.md`. Her kilometre taşı ayrı dal ve PR'dır. Durum: `[ ]` bekliyor, `[~]` sürüyor, `[x]` tamam.
+Kaynak: `docs/prompts/parca-1.md`. Her kilometre taşı ayrı dal ve PR'dır.
 
-| # | Kilometre taşı | Dal | Durum | Son commit |
+Onay: 2026-09-25 (kullanıcı: "Proje + Parça 1'e başla")
+
+Durumlar: `[ ]` başlamadı, `[~]` sürüyor, `[k]` kod bitti ve kullanıcı doğrulaması bekliyor, `[x]` tamam.
+
+| # | Kilometre taşı | Dal | Durum | Birleşen PR |
 |---|---|---|---|---|
-| M0 | Repo iskeleti | `p1/m0-skeleton` | [ ] | — |
-| M1 | Yayın iskeleti (GHCR + Dokploy) | `p1/m1-deploy` | [ ] | — |
+| M0 | Repo iskeleti, yerel test ortamı, Durum ve Yenilikler | `p1/m0-skeleton` | [~] | — |
+| M1a | İmajlar, bütün servisler, yönetici oturumu, admin Servisler paneli | `p1/m1a-images` | [ ] | — |
+| M1b | Yayın hattı (CI, deploy, rollback, DEPLOY_DOKPLOY.md) | `p1/m1b-deploy` | [ ] | — |
 | M2 | Veritabanı ve referans verisi | `p1/m2-db` | [ ] | — |
 | M3 | Sağlayıcılar | `p1/m3-providers` | [ ] | — |
-| M4 | Ingest | `p1/m4-ingest` | [ ] | — |
+| M4 | Ingest, replay ve senaryo araçları | `p1/m4-ingest` | [ ] | — |
 | M5 | Canlı API | `p1/m5-live-api` | [ ] | — |
 | M6 | Web canlı harita | `p1/m6-map` | [ ] | — |
-| M7 | Dev araçları, canlı duman testi, kapsama ölçümü | `p1/m7-tools` | [ ] | — |
+| M7 | Canlı araçlar ve kapsama raporu | `p1/m7-tools` | [ ] | — |
 
-## M0 — Repo iskeleti
-**Dokunulacak dizinler:**
-- kök yapılandırma: `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.base.json`, `eslint.config.mjs`, `.prettierrc`, `.editorconfig`, `.nvmrc`, `.env.example`
-- `packages/{shared,i18n,geo,engine,providers,db}`
-- `apps/{web,api,worker}`
+## M0 — Repo iskeleti ve yerel test ortamı
+**Dizinler:**
+- kök yapılandırma
+- `packages/{shared,i18n,geo,providers}`
+- `apps/{web,api}`
 - `scripts/`
 - `.github/workflows/ci.yml`
+- `.claude/launch.json`
+- `.env.example`
+- `LICENSE`
 
 **Kabul komutları:**
 - `pnpm install --frozen-lockfile`
-- `pnpm ci:local` (lint + typecheck + test + build)
-- `git ls-files --eol` içinde `w/crlf` yok
+- `pnpm ci:local`
+- `pnpm check:eol`
+- `pnpm changelog:check`
+- `pnpm stats`
+- `pnpm backup`
+- `pnpm dev` → `http://localhost:3100/durum` API'yi "Çalışıyor" gösterir; `/yenilikler` açılır; TR/EN geçişi çalışır
 
-**Notlar:** TypeScript 6.0.x'e pinlenir. typescript-eslint 8.70 `typescript <6.1` istiyor; TS 7 (native) henüz desteklenmiyor (DECISIONS D-021).
+**Notlar:**
+- TypeScript 6.0.x'e sabitlendi (D-021).
+- `engine` ve `db` paketleri ilk kullanıldıkları kilometre taşında oluşturulur.
 
-**Çıktı kaydı:** (kilometre taşı bitince buraya komut çıktıları eklenir)
+**Çıktı kaydı:** Kilometre taşı bitince komut çıktıları buraya eklenir.
 
-## M1 — Yayın iskeleti
-**Kabul:** `docs/prompts/parca-1.md` → M1. **DUR:** PR birleşmeden önce kullanıcı `docs/DEPLOY_DOKPLOY.md` adımlarını uygular.
-
-## M2–M7
+## M1a–M7
 Ayrıntılar `docs/prompts/parca-1.md`'dedir. Her kilometre taşına başlarken bu dosyaya dizinler ve kabul komutları eklenir.

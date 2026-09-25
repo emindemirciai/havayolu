@@ -1,94 +1,178 @@
 # ucus-takip — proje kuralları
 
-Bu dosya her oturumda otomatik yüklenir; yalnızca her zaman geçerli kuralları içerir. Ayrıntılar: `docs/spec/` (alan ve veri kaynakları), `.claude/rules/` (dizine özel kurallar), `docs/prompts/` (parça görevleri), `docs/REFERENCES.md` (doğrulanmış URL'ler).
+Bu dosya her oturumda otomatik yüklenir; yalnızca her zaman geçerli kuralları içerir. Ayrıntılar: `docs/spec/` (alan, veri kaynakları, altyapı), `.claude/rules/` (dizine özel kurallar), `docs/prompts/` (parça görevleri), `docs/REFERENCES.md` (doğrulanmış URL'ler).
 
 ## Değerler
-- **APP_NAME:** henüz seçilmedi (kod adı `ucus-takip`). **DOMAIN:** henüz seçilmedi. İkisi de koda gömülmez; `APP_NAME`, `DOMAIN`, `CONTACT_EMAIL` env'den okunur.
-- **GITHUB_REPO:** `<gh-kullanıcı>/ucus-takip`, dal `main`. Kullanıcı adı `gh api user -q .login` ile doğrulanır.
+- **APP_NAME / DOMAIN:** henüz seçilmedi (kod adı `ucus-takip`). Koda gömülmez; env'den okunur.
+- **Host'lar:** web `https://${WEB_HOST}`, API ve WS `https://${API_HOST}` (ayrı env'ler; `api.` öneki türetilmez).
+  - Kalıcı domain seçilene kadar geçici host kullanılır: mevcut bir domain'in alt alanı (`ucus.<domain>` + `ucus-api.<domain>`) ya da `ucus.<ip-tireli>.sslip.io`.
+  - Geçici host'ta alınan web push abonelikleri ve PWA kurulumları kalıcı domain'e taşınmaz.
+- **GITHUB_REPO:** `emindemirciai/ucus-takip`. Repo **özel**, plan **GitHub Free**: dal koruması ve environment yok, CI ayda 2.000 dk. GHCR imaj adları küçük harflidir: `ghcr.io/emindemirciai/ucus-takip-{web,api,worker}`.
 - **Birincil istasyon:** IST (LTFM). Tohum istasyonlar: IST, SAW, ESB, ADB, AYT.
-- Web `https://DOMAIN`, API ve WS `https://api.DOMAIN`.
+- **URL şeması:**
+  - canlı uçak `/?hex=<hex>`
+  - uçuş sayfası `/ucus/<flightId>` (EN: `/en/ucus/<flightId>`)
+  - istasyon `/istasyon/<icao>`, operasyon panosu `/istasyon/<icao>/operasyon`
+  - durum `/durum`, yenilikler `/yenilikler`
+
+  Bildirimler uçuş sayfasına gider; uçuş sayfası gelene kadar (Parça 3) `/?hex=` kullanılır.
 
 ## Ürün (özet)
-Türkiye odaklı, herkese açık, ileride ücretli olacak sivil havacılık uçuş takip platformu. Önce web (PWA), sonra aynı backend'i kullanan Expo iOS/Android uygulaması.
-Kullanıcı bir uçuşu (sefer no / çağrı kodu), bir uçağı (tescil / hex) ya da bir istasyonun varış akışını (havayolu/tip filtreli) takip eder. Uçak istasyona yaklaşınca (varsayılan 10 km, ARP'a) ve teker koyunca bildirim alır. **Tek uçuş takibi ve istasyon operasyonu eşit önemdedir.**
-FR24 premium benzeri derinlik sunar: filtreli canlı harita, uçuş detayı, irtifa/hız grafiği, geçmiş oynatma, istasyon panosu. Varsayılan görünüm sadedir, "Uzman" görünüm ayrıntıyı açar. Arayüz TR önceliklidir, EN ikinci dildir. ADS-B'nin sınırları kullanıcıya dürüstçe söylenir (`docs/spec/domain.md` → "v1 sınırları").
+Türkiye odaklı, herkese açık, ileride ücretli olacak sivil havacılık uçuş takip platformu. Önce web (PWA) gelir, sonra aynı backend'i kullanan Expo iOS/Android uygulaması.
+
+Kullanıcı bir uçuşu (sefer no / çağrı kodu), bir uçağı (tescil / hex) ya da bir istasyonun varış akışını (havayolu/tip filtreli) takip eder. Uçak istasyona yaklaştığında (varsayılan 10 km, havalimanı merkezine göre) ve indiğinde kullanıcı bildirim alır. **Tek uçuş takibi ve istasyon operasyonu eşit önemdedir.**
+
+FR24 premium benzeri derinlik: canlı harita, uçuş detayı, grafikler, geçmiş oynatma, istasyon panosu. Varsayılan görünüm sadedir, "Uzman" görünüm ayrıntıyı açar. Arayüz TR önceliklidir, EN ikinci dildir. ADS-B'nin sınırları kullanıcıya dürüstçe söylenir (`docs/spec/domain.md` → "v1 sınırları").
 
 ## Mimari (gerekçesiz değiştirme → DUR-SOR + `docs/DECISIONS.md`)
-- **Monorepo:** pnpm workspaces + Turborepo, TypeScript `strict` + `noUncheckedIndexedAccess`, ESM.
+- **Monorepo:** pnpm workspaces + Turborepo, TypeScript `strict` + `noUncheckedIndexedAccess`, ESM. Paketler `@ucus/*` adını taşır.
 - **`apps/web`:** Next.js App Router (`output: 'standalone'`), MapLibre GL JS, PWA + Web Push, admin paneli.
 - **`apps/api`:** Fastify, REST (OpenAPI) + WebSocket.
-- **`apps/worker`:** tek imaj, `WORKER_ROLE` = `ingest,engine,notifier,jobs` alt kümesi. Üretimde iki servis vardır: `ut-worker-rt` (`ingest,engine`) ve `ut-worker-bg` (`notifier,jobs`). `all` yalnızca yerel geliştirmede kullanılır.
+- **`apps/worker`:** tek imaj, `WORKER_ROLE` ⊆ `ingest,engine,notifier,jobs`. Dizin düzeni sabittir: `apps/worker/src/{ingest,engine,notifier,jobs}/`. Üretimde iki servis vardır: `ut-worker-rt` (`ingest,engine`) ve `ut-worker-bg` (`notifier,jobs`).
 - **`apps/mobile`:** Expo (development build, Expo Router), `@maplibre/maplibre-react-native`, expo-notifications, EAS.
 - **Veri:** PostgreSQL + PostGIS (Drizzle). İki Redis: `redis-queue` (BullMQ, kalıcı) ve `redis-live` (anlık durum, kalıcı değil).
-- **Paketler:** `packages/shared` (tipler, zod, sabitler, harita katman stilleri), `i18n`, `geo`, `engine` (saf, IO yok), `providers`, `db`. Ayrıca `tools/` (yalnızca dev/test).
-- **Yayın:** GitHub Actions imajları derler → GHCR. Dokploy (Hostinger KVM 2, **başka projelerle paylaşılır**) yalnızca imaj çeker. VPS'te build yapılmaz.
+- **Paketler:**
+  - `shared`: tipler, zod, changelog, yol haritası, harita katman stilleri, tasarım token'ları
+  - `i18n`, `geo`, `providers`, `db`
+  - `engine`: saf, IO yok
+  - `tools/`: yalnızca dev/test
+- **Yayın:** GitHub Actions imajları derler → GHCR → Dokploy (Hostinger KVM 2, **başka projelerle paylaşılır**) yalnızca imaj çeker. VPS'te build yapılmaz.
 
 ## Sürüm pinleri (doğrulama 2026-09-25; yükseltme = ayrı PR)
-Node 24 (`.nvmrc`: `24`; Node 26 LTS'ye geçiş 2026-10-28 sonrası ayrı PR, kullanıcı onayıyla) · pnpm 12.6 (`packageManager`, corepack'e güvenme) · **typescript 6.0.x** (TS 7 native henüz desteklenmiyor: typescript-eslint `<6.1` istiyor) · eslint 10 + typescript-eslint 8.70 · zod 4 · turbo 2.11 · next 16.3 · react 19.3 · fastify 5.x (6-alpha değil) · @fastify/websocket 11 · drizzle-orm 0.45 / drizzle-kit 0.31 (1.0-RC API'si yok) · maplibre-gl 6.x · bullmq 6.x + açık `ioredis` · redis 8 · `postgis/postgis:18-3.6` (`latest` değil) · vitest 5 · @playwright/test 1.63 · Expo SDK 57 (58 stabil çıktıysa DECISIONS ile) · @maplibre/maplibre-react-native ^11.4 (v11 API'si) · expo-server-sdk ^7.2 · web-push 3.6.7.
+- **Çalışma ortamı ve dil:** Node 24 (`.nvmrc` 24; Node 26 LTS'ye geçiş 2026-10-28 sonrası ayrı PR, kullanıcı onayıyla) · pnpm 12.6 (`packageManager`; corepack'e güvenme) · **typescript 6.0.x** (TS 7 native henüz yok: typescript-eslint `<6.1` istiyor) · zod 4.
+- **Araçlar ve test:** eslint 10 + typescript-eslint 8.70 · turbo 2.11 · vitest 5 · @playwright/test 1.63.
+- **Web ve backend:**
+  - next 16.3 · **react 19.3 yalnızca web**: mobilde React sürümünü Expo SDK belirler, ortak paketler `react`'i yalnızca peer olarak alır
+  - fastify 5.x (6-alpha değil) · @fastify/websocket 11
+  - drizzle-orm 0.45 / drizzle-kit 0.31 (1.0-RC API'si yok)
+  - maplibre-gl 6.x · bullmq 6.x + açık `ioredis` · redis 8
+  - `postgis/postgis:18-3.6` (`latest` değil) · web-push 3.6.7
+- **Mobil:** Expo SDK 57 (`expo` ≥ 57.0.17; 58 stabil çıktıysa DECISIONS ile) · @maplibre/maplibre-react-native ^11.4 (v11 API'si) · expo-server-sdk ^7.2.
+- pnpm 11+ `minimumReleaseAge` varsayılanı 1440 dk'dır: 24 saatten yeni sürümler kurulmaz. Değiştirmek gerekirse `pnpm-workspace.yaml`'a açıkça yaz ve DECISIONS'a kaydet.
 
 ## Veri kaynakları — kesin kurallar (ayrıntı: `docs/spec/data-sources.md`)
-- **İzinli:** adsb.lol API (ODbL; tek canlı kaynak), opsiyonel kendi alıcımız (`LOCAL_RECEIVER_URLS`), OurAirports (kamu malı), VRS standing-data (CC0; havayolu + rota), aviationweather.gov (METAR/TAF), OpenFreeMap (harita).
-- **Yasak:** airplanes.live, adsb.fi, OpenSky (her katman), ADS-B Exchange Community/RapidAPI, Flightradar24 ve FlightAware'den kazıma, **FR24 resmi API'si** (şartları rakip ürünü yasaklar), adsb.lol `routeset`/`route` uç noktaları (Referer korumalı), resmi olmayan uç noktalar ve kütüphaneler, başka markaların ikon/görselleri.
-- **Harici API'lere yalnızca worker erişir.** Web ve mobil istemci adsb.lol'e asla doğrudan istek atmaz.
-- **Lisans kaydı:** `packages/providers` içindeki her sağlayıcı `commercialUse`, `attribution`, `shareAlike`, `rateLimit` bilgisini taşır. `DATA_USAGE_MODE=commercial` (varsayılan) iken `commercialUse:false` olan bir sağlayıcı başlatılamaz.
-- **Gizlilik:** `dbFlags` (yoksa 0; bit testi ile): 1 askeri → varsayılan gizli, 4 PIA ve 8 LADD → tescil/sahip gizli. Admin'in hex engel listesi her kanalda uygulanır.
-- **Ticari sağlayıcı entegrasyonu v1'de yoktur.** Yalnızca `ScheduleProvider` tip arayüzü tanımlanır (Parça 5).
+- **İzinli:**
+  - canlı veri: adsb.lol API (ODbL; tek canlı kaynak), opsiyonel kendi alıcımız (`LOCAL_RECEIVER_URLS`)
+  - referans: OurAirports (kamu malı), VRS standing-data (CC0; havayolu + rota), aviationweather.gov (METAR/TAF)
+  - harita: OpenFreeMap; Protomaps PMTiles yalnızca self-host harita yedeği
+- **Yasak:**
+  - airplanes.live, adsb.fi, OpenSky (her katman), ADS-B Exchange Community/RapidAPI
+  - Flightradar24 ve FlightAware'den kazıma; **FR24 resmi API'si** (şartları rakip ürünü yasaklar)
+  - adsb.lol `routeset` (Referer korumalı) ve gizli `route` (güvenilmez) uç noktaları
+  - resmi olmayan uç noktalar ve kütüphaneler; başka markaların ikon ve görselleri
+- **Harici servislere yalnızca worker erişir.** Web ve mobil istemci adsb.lol'e asla doğrudan istek atmaz.
+- **Lisans kaydı:** `packages/providers` içindeki her sağlayıcı data-sources.md → "Lisans kaydı"ndaki 7 alanı taşır. `DATA_USAGE_MODE=commercial` (varsayılan) iken `commercialUse:false` olan bir sağlayıcı başlatılamaz.
+- **Gizlilik:** `dbFlags` yoksa 0'dır ve bit testiyle okunur.
+  - 1 askeri → varsayılan gizli (API, WS ve aramada dönmez).
+  - 4 PIA ve 8 LADD → tescil ve sahip alanları gizlenir.
+  - Admin'in hex engel listesi her kanalda uygulanır.
+- **Ticari sağlayıcı entegrasyonu v1'de yoktur.** `ScheduleProvider` tip arayüzü Parça 1 M3'te tanımlanır; uygulaması Parça 5'tedir.
 
 ## DUR VE SOR — bu durumlarda çalışmayı durdur, kullanıcıya sor
-1. APP_NAME/DOMAIN gereken bir üretim adımı var ve değerler hâlâ boş.
-2. Bir sır, hesap ya da etkileşimli giriş gerekiyor (Dokploy, GHCR, SMTP, `gh`, EAS/Expo, Apple, Google, S3, Sentry). **Değer uydurma.** Özellik env yokken temiz kapanacak şekilde bitir, adımı `docs/ACTIVATION.md`'ye yaz, devam et.
+1. Kalıcı APP_NAME/DOMAIN gerektiren bir adım var ve değer boş: yasal metinler, mağaza, kalıcı push/PWA, SPF/DKIM. Geçici host yayın için yeterlidir.
+2. Bir sır, hesap ya da etkileşimli giriş gerekiyor: Dokploy, GHCR, SMTP, `gh`, EAS/Expo, Apple, Google, S3, Sentry.
+   - **Değer uydurma.**
+   - Sırları (VAPID, JWT, setup token) kullanıcı üretir; ajan üretim komutunu çalıştırmaz ve çıktısını görmez.
+   - Özelliği env yokken temiz kapanacak şekilde bitir, adımı `docs/ACTIVATION.md`'ye yaz ve devam et.
 3. Bir veri kaynağının lisansı, şartı ya da davranışı belirsiz veya değişmiş (ör. adsb.lol 401/403 dönmeye başladı).
-4. Üretimi etkileyen her eylem: Dokploy API çağrısı, üretim DB'si, VPS'e yük testi, DNS.
+4. Üretimi etkileyen, rutin yayın dışındaki her eylem: üretim DB'sine bağlanmak, Dokploy ayarı değiştirmek, VPS'e yük testi, DNS.
 5. Mimari listesindeki bir seçimi değiştirmek ya da ücretli bir bağımlılık eklemek.
-6. Push, PR birleştirme, repo dışında dosya silme.
+6. Canlı harici çağrı yapan araçlar (`smoke:live`, `record`, `coverage:probe`, fixture çekimi), repo dışında dosya silme.
 7. Bir kabul kriteri 3 denemede geçmiyor. Hatayı, denenenleri ve seçenekleri özetle.
 
 Listede olmayan küçük teknik belirsizliklerde standart ve güvenli seçeneği uygula, `docs/DECISIONS.md`'ye yaz.
 
 ## Git ve yayın
-- `main` = üretim. Merge edilen her PR yayına çıkar. `main`'e doğrudan commit/push yapılmaz.
-- Her kilometre taşı için dal açılır: `p<N>/m<K>-<kisa-ad>` (ör. `p1/m2-db`). Commit'ler Conventional Commits biçiminde ve İngilizce olur.
-- Kilometre taşı bitince `pnpm ci:local` çalıştırılır. Sonra DUR ve sor: "`<dal>` dalını push edip PR açayım mı?" Onay gelirse `git push -u origin <dal>`, `gh pr create --fill`, `gh pr checks --watch` çalıştırılır ve çıktı rapora eklenir.
-- PR'ı `main`'e birleştirmek yalnızca kullanıcının işidir.
-- Yasak: `--force`, `--no-verify`, geçmişi yeniden yazmak, `.env*` (`.env.example` hariç) commit etmek.
+- **Temel kural:** `main` = üretim. Kilometre taşı dalları `p<N>/m<K>-<kisa-ad>` biçimindedir. Commit'ler Conventional Commits biçiminde ve İngilizce yazılır.
+- **Yayın akışı (kullanıcı kararı 2026-09-25):**
+  1. Kilometre taşı bitince yerel kontroller ve teslimatlar tamamlanır.
+  2. Dal push edilir, `gh pr create --fill` ile PR açılır, CI izlenir.
+  3. **CI yeşilse ajan PR'ı merge commit ile birleştirir** (`gh pr merge --merge`; squash ve rebase kullanılmaz).
+  4. Ardından deploy izlenir ve yayın `/version` ile doğrulanır.
+  5. CI kırmızıysa düzeltilir; kırmızı PR birleştirilmez.
+- **Yeni dal:** Önce `git fetch origin` çalıştırılır. Önceki PR birleştiyse `main`'den açılır. Birleşmediyse önceki dalın üstünden açılır ve PR tabanı önceki dal olur (yığılmış dal).
+- **Oturum başı:** `git branch --show-current` yazdırılır; plan dosyasının güncel hâli çalışılan daldadır.
+- **Yasak:** `--force`, `--no-verify`, rebase ve geçmişi yeniden yazmak, `.env*` (`.env.example` hariç) commit etmek, `main`'e doğrudan push (ilk kuruluş push'u hariç, D-024).
 
 ## Çalışma döngüsü
-1. Oturum başında `docs/plans/parca-N.md` (canlı ilerleme dosyası) ve son raporu (`docs/reports/`) oku. İlk tamamlanmamış kilometre taşından devam et.
-2. Yeni bir parçada önce planı yaz: kilometre taşları, dokunulacak dizinler, kabul komutları, durum `[ ]`. Sonra DUR, onay al.
-3. Bir oturumda tek kilometre taşı bitir. Kabul komutlarının çıktısını plana ekle, commit at, DUR ve kısa özet ver.
-4. Parça sonunda `docs/reports/parca-N.md` yaz: yapılanlar, komutlar ve sonuçları, ölçümler, bilinen sınırlar, `docs/ACTIVATION.md`'ye eklenen adımlar.
-5. `docs/ACTIVATION.md` kullanıcının elle yapacağı dış adımların **tek ve canlı** listesidir. Her satır şunları taşır: adım, env/secret adları, nerede yapılacağı, hangi özelliği açtığı, durum `[ ]`.
-6. Doğrulama gerekiyorsa önce `docs/REFERENCES.md`'deki URL'leri kullan. Yeni kaynak eklersen oraya yaz.
+1. **Oturum başı:** `docs/plans/parca-N.md` ve son raporu oku. Plan durumları:
+   - `[ ]` başlamadı
+   - `[~]` sürüyor
+   - `[k]` kod bitti, kullanıcı doğrulaması bekliyor
+   - `[x]` tamam
 
-## Her iş sonrası teslimatlar (kullanıcının kalıcı talebi)
-Her kilometre taşı ya da bağımsız iş bittiğinde, sırayla:
-1. **Sürüm ve Yenilikler:** Sürüm artırılır (1.0 öncesinde birleşen her kilometre taşı MINOR, düzeltme PATCH). Kullanıcıya dönük değişiklikler tek kaynağa yazılır: `packages/shared/src/changelog/entries.ts` (TR/EN, tarih, madde, varsa "Dene →" bağlantıları). Bu kaynaktan `CHANGELOG.md` üretilir (`pnpm changelog`) ve web'de `/yenilikler` sayfası beslenir. Bu sayfa, kullanıcının o sürümde görsel olarak test edebileceği sayfaların dizinidir. Maddeler kullanıcının anlayacağı dille yazılır.
+   İlk `[ ]` ya da `[~]` kilometre taşından devam et; `[k]` olanları atla.
+2. **Yeni parça:** Önce planı yaz: kilometre taşları, dizinler, kabul komutları. Sonra DUR ve onay al. Onay alınınca plana `Onay: <tarih>` satırı yazılır; bu satır yoksa planı yeniden sun.
+3. **Oturum başına iş:** Bir oturumda tek kilometre taşı bitirilir. Kabul komutlarının çıktısı plana eklenir.
+4. **Kullanıcıya bağlı kabul maddeleri** (üretimde gerçek cihaz, gerçek varış, gerçek yedek, 24 saatlik ölçüm): ACTIVATION'a `[ ]` olarak yazılır, kilometre taşı `[k]` işaretlenir ve sonrakine geçilir. Parça, `[k]` maddeler kapanmadan `[x]` olmaz.
+5. **Parça sonu:** `docs/reports/parca-N.md` yazılır: yapılanlar, komutlar ve sonuçları, ölçümler, bilinen sınırlar, ACTIVATION'a eklenenler.
+6. **ACTIVATION:** `docs/ACTIVATION.md`, kullanıcının elle yapacağı dış adımların **tek ve canlı** listesidir.
+7. **Doğrulama kaynakları:** Önce `docs/REFERENCES.md`'deki kaynaklar kullanılır.
+
+## Her iş sonrası teslimatlar (kullanıcının kalıcı talebi, D-022)
+Sıra: 1–4 commit'ten önce yapılır ve aynı commit'e girer. 5 commit'ten sonra çalışır. 6 push ve birleştirmeyle birlikte yapılır.
+1. **Sürüm ve Yenilikler:**
+   - Sürüm artırılır. 1.0 öncesinde birleşen her kilometre taşı MINOR, her düzeltme PATCH artışıdır. Kök `package.json` sürümü changelog'daki en yeni sürümle aynıdır (`pnpm changelog:check`).
+   - Kullanıcıya dönük değişiklikler yalnızca `packages/shared/src/changelog/entries.ts`'e yazılır: TR/EN, tarih, maddeler, varsa "Dene →" bağlantıları.
+   - `pnpm changelog` bu kaynaktan `CHANGELOG.md`'yi üretir. `/yenilikler` sayfası da aynı kaynaktan beslenir ve kullanıcının o sürümde test edebileceği sayfaların dizinidir.
 2. **README:** `README.md` Türkçe ve İngilizce bölümleriyle güncellenir: sürüm, özellik durumu, yerelde çalıştırma, satır sayısı.
-3. **Satır sayısı:** `pnpm stats` (git'teki dosyalar; lockfile ve `docs/research/` hariç) çalıştırılır. Toplam ve dağılım kullanıcıya bildirilir.
-4. **Yerel test ortamı:** `pnpm dev` ile uygulama yerelde açılır ve tarayıcı önizlemesinde (`.claude/launch.json`) kullanıcıya gösterilir. Deploy'u beklemeden test edilebilir.
-5. **Yedek:** `pnpm backup` çalıştırılır. `git archive` ile temiz bir zip üretilir (yalnızca commit'li dosyalar) → `C:\PROJELER\ucus-takip-yedek\ucus-takip-v<sürüm>-<tarih>.zip`. Dosya kullanıcıya gönderilir.
-6. **CI yeşil, Dokploy hatasız:** Push'tan sonra `gh pr checks --watch` ya da `gh run watch` ile CI izlenir. Kırmızıysa düzeltilmeden iş bitmiş sayılmaz.
+3. **Satır sayısı:** `pnpm stats` çalıştırılır (lockfile ve `docs/research/` hariç). Toplam ve dağılım kullanıcıya bildirilir.
+4. **Yerel test:** `pnpm dev` arka planda başlatılır ve uygulama tarayıcı önizlemesinde (`.claude/launch.json`) kullanıcıya gösterilir.
+5. **Yedek:** `pnpm backup` → `git archive` zip'i `C:\PROJELER\ucus-takip-yedek\ucus-takip-v<sürüm>-<tarih>.zip` olarak üretilir ve kullanıcıya gönderilir.
+6. **CI ve yayın:** CI yeşil ve Dokploy deploy'u hatasız olmalıdır. Kırmızıysa iş bitmiş sayılmaz.
 
 ## Kalite çıtası
-- **Üretim kodu** = üretim imajına giren her şey (`apps/*/src`, `packages/*/src`). Üretim kodunda TODO/FIXME, sahte buton, placeholder sayfa, mock veri ya da mock API yoktur. ESLint `no-warning-comments: error` ve `--max-warnings 0` ile zorlanır.
-- **Testler** (`**/*.test.ts`, `**/test/**`, `e2e/`, `tools/`, `**/fixtures/**`) stub HTTP sunucusu, kayıtlı gerçek fixture, Mailpit, MinIO ve Turnstile test anahtarlarını kullanabilir. Üretim kodu bunları import edemez (`no-restricted-imports`).
-- **CI ve testler canlı harici API'ye istek atmaz** (`EXTERNAL_PROVIDERS_DISABLED=true`). Canlı kontroller elle çalıştırılır: `pnpm smoke:live`, `pnpm record`, `pnpm coverage:probe`.
+- **Üretim kodu** = üretim imajına giren her şey (`apps/*/src`, `packages/*/src`). Üretim kodunda TODO/FIXME, "sonra yapılacak" notu, sahte buton, placeholder sayfa, mock veri ve mock API yoktur (`no-warning-comments: error`, `--max-warnings 0`).
+- **Testler** (`**/*.test.ts`, `**/test/**`, `e2e/`, `tools/`, `**/fixtures/**`) stub HTTP sunucusu, commit'li fixture, Mailpit, MinIO ve Turnstile stub'ını kullanabilir. Üretim kodu bunları import edemez (`no-restricted-imports`).
+- **CI, testler ve `pnpm dev` canlı harici servise istek atmaz.** `EXTERNAL_PROVIDERS_DISABLED=true` (`.env.example` varsayılanı) şunları kapatır:
+  - adsb.lol, OurAirports, VRS aynası, aviationweather
+  - OpenFreeMap (testte yerel `test-style.json`)
+  - Turnstile siteverify (testte stub)
+
+  `LOCAL_RECEIVER_URLS` (localhost replay) açık kalır. Referans verisi testte `tools/fixtures/` altındaki commit'li dosyalardan gelir.
 - **Anahtarı olmayan entegrasyon:** stub'a karşı integration testi geçer, env yokken özellik temiz kapanır, adım ACTIVATION'a yazılır. Admin'e kısıtlı işlevsel bir kurulum sayfası placeholder sayılmaz.
-- **Env:** tüm env değişkenleri zod ile doğrulanır ve `.env.example`'da açıklamalı olarak durur. Sır repoya girmez. Çok satırlı anahtarlar `*_BASE64` olarak verilir.
+- **Env:**
+  - Tüm env değişkenleri zod ile doğrulanır ve `.env.example`'da açıklamalı olarak durur.
+  - `.env.example` sır olmayan geliştirme varsayılanlarını içerir; `pnpm dev` onunla eksiksiz açılır. Kullanıcının `.env`'i varsa onu ezer.
+  - Ajan `.env` dosyalarını okuyamaz ve yazamaz (izin kuralı).
+  - Üretilen sırlar yalnızca `[A-Za-z0-9_-]` karakterlerinden oluşur (Compose `$`'ı yorumlar). Çok satırlı anahtarlar `*_BASE64` olarak verilir.
 - **Replay ve simülasyon** yalnızca `APP_ENV=development|test` iken çalışır; açılışta doğrulanır.
 - **Temizlik:** migration'lar temiz DB'de baştan sona çalışır, seed idempotenttir. Lint, typecheck ve testler sıfır hatayla geçer.
-- **Adlandırma:** kod tanımlayıcıları, enum ve DB değerleri, loglar ve commit'ler İngilizce ve ASCII'dir. Arayüz metinleri yalnızca `packages/i18n`'dedir (sabit metin yok). `docs/` Türkçedir.
+- **Adlandırma:**
+  - Kod tanımlayıcıları, enum ve DB değerleri, loglar ve commit'ler İngilizce ve ASCII'dir (Yunan harfi de yoktur).
+  - Arayüz metinleri yalnızca `packages/i18n`'dedir. Changelog ve yol haritası verisi TR/EN olarak `packages/shared`'dadır.
+  - `docs/` Türkçedir.
 
 ## Geliştirici ortamı (Windows 11)
-- Repo yolu `C:\PROJELER\ucus-takip` (ASCII, boşluksuz). `git config core.longpaths true` ayarlanır.
-- `.gitattributes` LF'yi zorlar. Prettier `endOfLine: "lf"`. `pnpm-workspace.yaml` içinde `shellEmulator: true`.
-- package.json script'lerinde `rm -rf`, `export`, `VAR=x cmd` ve tek tırnak yasaktır. Karmaşık işler `scripts/*.mts` (Node) olarak yazılır. `.sh` dosyaları yalnızca Linux konteynerinde çalışır.
-- Docker gerektiren komutlardan önce `docker info` çalıştır. Hata verirse DUR ve kullanıcıdan Docker Desktop'ı açmasını iste.
-- Komutlar hem Git Bash'te hem PowerShell'de çalışacak biçimde `pnpm <script>` olarak verilir.
-- iOS Simulator bu makinede yoktur. iOS = EAS bulut build'i + gerçek cihaz.
+- **Repo:** `C:\PROJELER\ucus-takip` (ASCII, boşluksuz). `core.longpaths true`. `.gitattributes` LF'yi zorlar ve doğru yazılmıştır; yeniden yazma (gitattributes `{a,b}` sözdizimini desteklemez).
+- **Script'ler:** `pnpm-workspace.yaml` içinde `shellEmulator: true`. package.json script'lerinde `rm -rf`, `export`, `VAR=x cmd` ve tek tırnak yasaktır; karmaşık işler `scripts/*.mts` olarak yazılır. `.sh` dosyaları yalnızca Linux konteynerinde çalışır.
+- **Yerel portlar sabittir, env'den gelir.** Bu makinede 3000–3003 başka bir projenin konteynerlerindedir.
+  - web 3100 · api 4100 · worker sağlık 4200
+  - Postgres 55432 · redis-queue 56379 · redis-live 56380
+  - Mailpit 58025/51025 · MinIO 59000/59001
+
+  Konteyner içi portlar üretimde web 3000, api 4000'dir.
+- **Uzun komutlar:** 2 dk'dan uzun sürebilecek her komut arka planda çalıştırılır: `pnpm dev`, `gh pr checks --watch --interval 30`, `gh run watch`, `pnpm record`, yük testi.
+  - Compose her zaman `docker compose … up -d --wait --wait-timeout 300` ile başlatılır.
+  - "no checks reported" hata sayılmaz; 1 dk sonra yeniden bakılır.
+  - k6 kurulmaz; `docker run --rm -i grafana/k6` ile çalıştırılır.
+- **Docker:** Docker gerektiren komutlardan önce `docker info` çalıştır. Hata verirse DUR ve kullanıcıdan Docker Desktop'ı açmasını iste.
+- **Mobil:** Bu makinede iOS Simulator, Android SDK ve Maestro yoktur. iOS = EAS bulut build'i + gerçek cihaz. Android emülatörü ACTIVATION adımıdır.
 
 ## Bilinçli olarak kapsam dışı (v1)
-Ödeme/abonelik ekranları, ticari veri sağlayıcı entegrasyonu (bkz. Parça 5), uçak fotoğrafları, hava radarı katmanı, 3B görünüm, ATC sesi, kilit ekranı canlı kartı/widget, konum tabanlı özellikler.
+Ödeme/abonelik ekranları, ticari veri sağlayıcı entegrasyonu (Parça 5), uçak fotoğrafları, hava radarı katmanı, 3B görünüm, ATC sesi, kilit ekranı canlı kartı/widget, konum tabanlı özellikler, telsiz çağrı adları, iz verisi arşivi, günlük ODbL dökümü (yerine yöntem belgesi), mobil OTA ve mobil CI.
 
 ## Komutlar
-Parça 1'de doldurulur ve güncel tutulur: kurulum, `dev`, `dev:replay`, `ci:local`, `lint`, `typecheck`, `test`, `test:integration`, `test:e2e`, `build`, `db:migrate`, `db:seed`, `smoke:live`, `coverage:probe`, `record`, `changelog`, `stats`, `backup`.
+| Komut | İş |
+|---|---|
+| `pnpm install` | Bağımlılıkları kurar |
+| `pnpm dev` | Web (3100) + API (4100) geliştirme sunucuları |
+| `pnpm ci:local` | format + lint + typecheck + test + build |
+| `pnpm ci:full` | `ci:local` + `test:integration` + `test:e2e` (ilgili testler eklendikçe; Docker gerekir) |
+| `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm build` | Tekil kontroller |
+| `pnpm check:eol` | Depoda CRLF'li metin dosyası olmadığını doğrular |
+| `pnpm changelog` · `pnpm changelog:check` | CHANGELOG.md üretir · sürüm ve changelog tutarlılığını denetler |
+| `pnpm stats` | Satır sayısı |
+| `pnpm backup` | Temiz zip yedek |
+
+Sonraki kilometre taşları bu tabloya kendi komutlarını ekler: `dev:replay`, `test:integration`, `test:e2e`, `db:migrate`, `db:seed`, `smoke:live`, `record`, `coverage:report`, `coverage:probe`.

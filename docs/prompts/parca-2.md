@@ -1,51 +1,31 @@
 # Parça 2 — Olay motoru, ilk gerçek bildirim, hesaplar ve takip
 
 **Başlatma:** `@docs/prompts/parca-2.md dosyasındaki Parça 2'ye başla`
-**Önce oku:** `docs/reports/parca-1.md`, `docs/reports/kapsama.md`, `docs/spec/domain.md` (tamamı), `docs/spec/data-sources.md` §4–5.
+**Önce oku:** `docs/reports/parca-1.md`, `docs/reports/kapsama.md`, `docs/spec/domain.md` (tamamı), `docs/spec/data-sources.md` §1 ve §4–5, `docs/spec/infra.md` ("Yedekleme", "Gözlem ve uyarı", "Analiz").
 
 ## Hedef
-- **2A:** Sahibi (ADMIN_EMAIL) kendi telefonuna, gerçek IST varışları için "10 km" ve "indi" bildirimlerini alır. Bu, ürünün temel vaadinin ilk gerçek kanıtıdır.
-- **2B:** Kullanıcı hesap açar. Bir uçuşu, uçağı ya da filtreli istasyon akışını takibe alır. Olaylar web push, mobil push (gönderici hazır; uygulama Parça 4'te) ve uygulama içi kanaldan iletilir. Kullanıcı verisi üretime girmeden önce yedekleme kurulmuş olur.
+- **2A:** Proje sahibi (`ADMIN_EMAIL`), gerçek IST varışları için "10 km" ve iniş bildirimlerini kendi telefonunda alır. Hem tek uçuş takibi hem filtreli istasyon akışı denenir. Bu, ürünün temel vaadinin ilk gerçek kanıtıdır.
+- **2B:** Kullanıcı hesap açar; bir uçuşu, uçağı ya da filtreli istasyon akışını takibe alır.
+  - Olaylar üç kanaldan iletilir: web push, mobil push (gönderici hazır; uygulama Parça 4'te) ve bildirim merkezi.
+  - Kullanıcı verisi üretime açılmadan önce yedekleme kurulur.
 
-Kapsama raporuna göre IST'de inişlerin çoğu `probable_landing` olacaktır (kullanıcının kendi alıcısı yok). Bu yol birinci sınıf tasarlanır ve test edilir.
+IST'de iniş bildiriminin hangi yoldan geleceğini `docs/reports/kapsama.md` belirler: kesin, muhtemel ya da düşük güven. `probable_landing` birinci sınıf bir yol olarak tasarlanır ve test edilir. **Motorun bütün eşikleri `docs/spec/domain.md`'dedir**; bu dosya onları tekrar etmez.
 
-## 2A — Olay motoru ve sahibine ilk bildirim
+## 2A — Olay motoru ve proje sahibine ilk bildirim
 
 ### M1 — Geo ve saf motor (`p2/m1-engine`)
-- `packages/geo`:
-  - büyük daire mesafesi ve yön
-  - eşiğe/merkez hattına yanal sapma
-  - pist hizası: track ile pist yönü farkı ≤ 15° ve merkez hattından yanal sapma ≤ 1 km
-  - yumuşatılmış yaklaşma hızı ve ETA
-  - kaydırılmış eşik hesabı
-- `packages/engine` (saf fonksiyonlar, IO yok). Her uçak için şunlar tutulur: son N örneklik halka tampon, uçuş örneği, aday istasyonlar.
-- Her örnekte hesaplanan metrikler:
-  - ARP'a ve eşiklere mesafe ve yön
-  - yaklaşma hızı ve ETA
-  - AGL (M2'deki yöntemle)
-  - yumuşatılmış dikey hız
+- **`packages/geo`:**
+  - büyük daire mesafesi ve yön (mevcut)
+  - eşiğe ve merkez hattına yanal sapma
   - pist hizası
-- **Varış sınıflandırması** — şunlardan biri sağlanırsa uçak varışta sayılır:
-  - Tahmini rotanın (VRS) varış meydanı bu istasyon ve rota uygunluğu düşük değil.
-  - AGL < 10.000 ft, yumuşatılmış dikey hız < −300 fpm ve mesafe azalıyor.
-  - 15 km içinde pist hizasında ve AGL < 4.000 ft.
-  - `navModes` `approach` içeriyor ve istasyona 30 km içinde (ek sinyal).
-- **Kalkış ayrımı:** İstasyondan havalanan uçak 10 dakika boyunca o istasyon için yaklaşma olayı üretmez.
-- Durumlar ve olaylar domain.md'deki İngilizce kodlarla uygulanır.
-- `touchdown` koşulu:
-  - havada → yerde geçişi
-  - ARP'a ≤ 6 km ya da pist poligonunun 300 m tamponu içinde
-  - gs < 180 kt
-
-  Doğrulama: 15 sn içinde ikinci bir yerde örneği ya da azalan gs. ALDT = ilk yerde örneğinin `sampleTime`'ı. Hizalı pist belirlenir (ör. "34L").
-- `probable_landing`: domain.md "İniş tespiti ve kapsama gerçeği" bölümündeki `high`/`medium` güven kuralları, tahmini iniş saati ve **kesinti bastırma** kuralları uygulanır. Uçak sonra yerde görülürse aynı kayıt `touchdown` olarak doğrulanır; yeni push gitmez, uygulama içi kayıt güncellenir.
-- `go_around` koşulu: `APPROACHING` durumunda (≤ 10 km ya da finalde) iken iniş olmadan ≤ 60 sn içinde ≥ 400 ft tırmanış ve dikey hız > +500 fpm.
-- `takeoff`: istasyonda yerde → havada geçişi.
-- Konum kaynağı `mlat`, `tisb_*` ya da `other` ise olay tespitinde düşük ağırlık alır.
-- İdempotensi ve determinizm:
-  - Benzersiz anahtar domain.md'de tanımlıdır.
-  - Sıra dışı gelen eski örnekler atlanır.
-  - Aynı örnek dizisi her zaman aynı olayları üretir.
+  - yumuşatılmış yaklaşma hızı ve tahmini varış
+  - kaydırılmış eşik hesabı
+  - **AGL fonksiyonu:** domain.md → "AGL yöntemi"; üç yöntem, saf. QNH, geoid N ve alan yüksekliği girdi olarak verilir.
+- **`packages/engine`** (saf, IO yok):
+  - Her uçak için son N konum örneğini tutan halka tampon, uçuş kaydı ve aday istasyonlar tutulur.
+  - Durumlar, geçişler, olaylar ve eşikler domain.md'deki gibidir: tespit eşikleri, `high/medium/low` güven, `landing_unverified`, `landing_unknown`, kesinti bastırma, idempotensi ve doğrulama.
+  - Rota bilgisi girdi olarak verilir (VRS içe aktarımı M2'dedir).
+  - Aynı örnek dizisi her zaman aynı olayları üretir. Sıra dışı gelen eski örnekler atlanır.
 - **Senaryolar** (`tools/scenarios`, IST pistleri üzerinde; her biri beklenen olay listesi ve zaman toleransıyla test edilir):
   1. düz ILS yaklaşması, yerde örnekli iniş → `touchdown` (ALDT ±5 sn)
   2. düz yaklaşma, 250 ft'te sinyal kaybı → `probable_landing` `high`
@@ -53,66 +33,71 @@ Kapsama raporuna göre IST'de inişlerin çoğu `probable_landing` olacaktır (k
   4. pas geçme ve ikinci yaklaşmada iniş
   5. kalkış
   6. FL350'de üstten geçiş (olay yok)
-  7. 20 km içinde bekleme paterni (yanlış eşik yok)
-  8. 600 ft'te sinyal kaybı, sonra yerde görünme → `probable_landing` → `touchdown` doğrulaması, ikinci push yok
+  7. 20 km içinde bekleme paterni (yanlış yaklaşma uyarısı yok)
+  8. 600 ft'te sinyal kaybı, sonra yerde görünme → `probable_landing` → doğrulama; ikinci push yok
   9. SAW'a iniş (IST için olay üretmemeli)
   10. rotası bilinmeyen varış
-  11. **IST finalinde 3 uçak varken sağlayıcı 120 sn 429 döner** → sıfır push, 3 uygulama içi "doğrulanamadı" kaydı
-  12. örnekleme aralığı 5, 10 ve 20 sn iken senaryo 1 ve 2 (teker koyma toleransı = aralık + 5 sn)
-- **Kabul:** `engine` ve `geo` paketlerinde vitest `coverage.thresholds.lines = 90` CI'da zorlanır. Tüm senaryolar geçer. Senaryo 5, 6, 7, 9 ve 11'de yanlış alarm yoktur.
-
-### M2 — Referans, rota, METAR ve irtifa (`p2/m2-reference`)
-- **VRS standing-data içe aktarımı** (data-sources.md §4): havayolları (ICAO, IATA, ad, `usesAlphanumericCallsigns`) ve rotalar. Günlük, ETag ile. Admin düzeltme tabloları: havayolu eşleme ve pist.
-- **Rota tahmini:** çağrı kodundan rota bulunur ve uygunluk yerelde hesaplanır. Sonuç "tahmini" olarak işaretlenir. Negatif önbellek her günlük içe aktarımda tazelenir.
-- **Sefer no → çağrı kodu adayı:** TK1985 → THY1985 (IATA tekil değildir; data-sources.md §4 kuralı).
-- **METAR/TAF** (data-sources.md §5):
-  - Etkin istasyonlar tek istekte çekilir: METAR 10 dk'da bir, TAF 60 dk'da bir. `upsertJobScheduler` kullanılır.
-  - Ayrıştırılan alanlar: QNH (`altim` hPa), rüzgâr, görüş, tavan, ham metin.
-- **AGL tahmini** — sırayla dene:
-  1. `alt_baro` + QNH düzeltmesi (≈ 27 ft/hPa, 1013,25 referans) − alan yüksekliği.
-  2. QNH yoksa: `alt_geom_ft − N_m × 3,28084 − alan_yüksekliği_ft`. Geoid ondülasyonu `egm96-universal` `meanSeaLevel(lat, lon)` ile istasyon başına bir kez hesaplanır ve `stations.geoid_undulation_m`'de saklanır. Paket yalnızca engine/worker'da kullanılır, web bundle'ına girmez.
-  3. İkisi de yoksa `alt_baro` ile toleranslı eşikler.
-
-  Kullanılan yöntem olay verisine yazılır.
+  11. IST finalinde 3 uçak varken sağlayıcı 120 sn `degraded` → sıfır `probable_landing`, 3 `landing_unverified`
+  12. örnekleme aralığı 5, 10 ve 20 sn iken senaryo 1 ve 2 (teker koyma toleransı = aralık + 5 sn; doğrulama penceresi domain.md'deki gibi)
+  13. 2.000 ft'te, eşiğe 12 km'de sinyal kaybı → push yok, `low` kaydı; takip `landing_unknown` ile kapanır ve "iniş verisi alınamadı" bildirimi üretilir
 - **Kabul:**
-  - Birim testleri: LTFM için N ≈ 37,05 m, SAW ≈ 37,61 m, AYT ≈ 27,36 m (±0,5 m).
-  - METAR ayrıştırıcısı gerçek fixture'larla test edilir.
-  - VRS içe aktarımı idempotenttir. AJet (TKJ/VF) ve THY (THY/TK) doğru eşlenir.
+  - `engine` ve `geo` paketlerinde vitest `coverage.thresholds.lines = 90` CI'da zorlanır.
+  - Tüm senaryolar geçer. Senaryo 5, 6, 7, 9 ve 11'de yanlış push yoktur.
+
+### M2 — Referans, rota ve METAR (`p2/m2-reference`)
+- **VRS rota içe aktarımı** (data-sources.md §4): günlük, ETag ile. Havayolları Parça 1'de gelmiştir; bu kilometre taşında `usesAlphanumericCallsigns` bayrağı ve admin düzeltme tabloları eklenir.
+- **Rota tahmini:** Çağrı kodundan rota bulunur ve uygunluk yerelde hesaplanır. Sonuç "tahmini" olarak işaretlenir. Negatif önbellek her günlük içe aktarımda tazelenir.
+- **Sefer no → çağrı kodu adayı:** TK1985 → THY1985 (IATA tekil değildir; data-sources.md §4).
+- **METAR/TAF** (data-sources.md §5): Etkin istasyonlar tek istekte çekilir; METAR 10 dk'da bir, TAF 60 dk'da bir (`upsertJobScheduler`). Ayrıştırılan alanlar: QNH (`altim` hPa), rüzgâr, görüş, tavan, ham metin.
+- **AGL girdileri:** M1'deki fonksiyon için METAR QNH'si ve istasyon geoid değeri sağlanır. Geoid değeri `egm96-universal` `meanSeaLevel(lat, lon)` ile istasyon başına bir kez hesaplanır ve `stations.geoid_undulation_m`'de saklanır. Paket yalnızca engine/worker'da kullanılır.
+- **Kabul:**
+  - Geoid birim testleri: LTFM ≈ 37,05 m, SAW ≈ 37,61 m, AYT ≈ 27,36 m (±0,5 m).
+  - METAR ayrıştırıcısı commit'li fixture'larla test edilir.
+  - VRS içe aktarımı idempotenttir; AJet (TKJ/VF) ve THY (THY/TK) doğru eşlenir.
 
 ### M3 — Motor worker'ı (`p2/m3-engine-worker`)
-- Worker `engine` rolü `ac:updates` stream'ini tüketici grubuyla okur. `NOGROUP` hatasında grubu `XGROUP CREATE … MKSTREAM` ile yeniden kurar; askıdaki mesajları `XAUTOCLAIM` ile alır.
-- Minimal durum `redis-queue`'da tutulur ve yeniden başlatmada geri yüklenir.
-- Olaylar `events` tablosuna yazılır; `flights` özeti güncellenir. Varış/kalkış olarak sınıflanan uçaklar için `track_points_fine` kuralı genişler (domain.md "Saklama").
-- **Performans:** `pnpm bench:engine` kayıtlı fixture'ı tek çekirdekte besler; hedef ≥ 2.000 güncelleme/sn. Rapora CPU modeli ve Node sürümü yazılır.
-- **Kabul:** Bench hedefi karşılanır. Yeniden başlatma testi geçer: süreç ortada öldürülür, olaylar yinelenmez ve kaybolmaz.
+- **Tüketim:** Worker `engine` rolü `ac:updates` stream'ini tüketici grubuyla okur. `NOGROUP` hatasında grubu `XGROUP CREATE … MKSTREAM` ile yeniden kurar; askıdaki mesajları `XAUTOCLAIM` ile alır.
+- **Durum:** Minimal durum `redis-queue`'da tutulur ve yeniden başlatmada geri yüklenir.
+- **Yazım:** Olaylar `events` tablosuna yazılır, `flights` özeti güncellenir. Sınıflandırma geldiği için `track_points_fine` kuralı domain.md "Saklama"daki tam hâline daraltılır.
+- **Performans:** `pnpm bench:engine`, `tools/fixtures/replay/LTFM-*.jsonl` varsa onu, yoksa `tools/scenarios` ile üretilen 3.000 uçaklık 10 dk'lık sentetik akışı tek çekirdekte besler. Hedef ≥ 2.000 güncelleme/sn. Kaynak, CPU modeli ve Node sürümü rapora yazılır.
+- **Kabul:**
+  - Bench hedefi karşılanır.
+  - Yeniden başlatma testi: süreç ortada öldürülür; olaylar yinelenmez ve kaybolmaz. Açılıştan sonraki 120 sn içinde oluşan iniş adayları kesinti bastırma kuralına göre `landing_unverified` olur; bu kayıp sayılmaz ve testte beklenir.
 
-### M4 — Sahibine ilk gerçek bildirim (`p2/m4-owner-push`)
+### M4 — Proje sahibine ilk gerçek bildirim (`p2/m4-owner-push`)
 - **Web Push:**
-  - VAPID anahtarları `pnpm vapid:generate` ile üretilir. Subject `mailto:` ya da https URL olmalı, localhost olamaz.
+  - VAPID anahtarlarını **kullanıcı** üretir: `pnpm vapid:generate` (DUR; ajan çalıştırmaz ve çıktıyı görmez). Çıktı parola yöneticisine ve Dokploy Environment'a yazılır. Ajan env biçimini doğrulayan zod şemasını ve testini yazar.
+  - Subject `mailto:` ya da https URL olmalı, localhost olamaz.
   - `web-push@3.6.7` kullanılır. 404/410 yanıtında abonelik silinir.
   - Yük **Declarative Web Push** biçimindedir: `{"web_push":8030,"notification":{title, body, navigate:"/?hex=…", …}}`. Service worker aynı JSON'u Chrome/Firefox/Android için ayrıştırır.
-- **Tek işlevsel admin sayfası** `/kurulum/bildirim` (yalnızca `ADMIN_EMAIL`; geçici giriş: e-postaya giden tek seferlik kod). Sayfada:
+- **`notifier` rolü** bu kilometre taşında web push için başlatılır; M7 onu genişletir.
+- **`follows` tablosu** ilk sürümüyle kurulur; M6 genişletir. Proje sahibinin takipleri buraya yazılır ve P1 toplu sorgusuna eklenir (`WATCH_HEX_LIST` yerine).
+- **Kurulum sayfası:** Parça 1'deki admin alanına eklenir: `ADMIN_HOST/bildirim-kurulumu`. Giriş Parça 1'deki yönetici oturumuyla yapılır; SMTP gerekmez. Sayfada:
   - service worker kaydı
-  - "Bildirimlere izin ver" düğmesi (izin yalnızca düğmeyle istenir)
-  - iOS'ta ana ekrana ekleme yönergesi (standalone değilse)
+  - "Bildirimlere izin ver" düğmesi (izin yalnızca düğmeyle ve nedeni açıklanarak istenir)
+  - iOS'ta Ana Ekrana Ekle yönergesi (standalone değilse)
   - hex, tescil ya da çağrı kodu ile takip ekleme
+  - istasyon akışı ekleme: istasyon + havayolu/tip/çağrı kodu öneki filtresi
   - "Test bildirimi gönder"
 
   Parça 3 bu sayfayı tasarım sistemiyle yeniden yazar. Bu sayfa placeholder sayılmaz.
-- Bu kilometre taşında eşleştirici basittir: sahibin takipleri ile olaylar eşlenir → BullMQ `notify` kuyruğu → web push. Tam kurallar 2B'de gelir.
 - **Şablonlar** (TR/EN, `packages/i18n`):
-  - "TK1985 (TC-JJA) IST'ye 10 km — tahmini iniş 2 dk"
+  - "TK1985 (TC-JJA) IST'ye 10 km — inişe yaklaşık 2 dk"
   - "TK1985 IST'de teker koydu — 14:32, pist 34L"
-  - "TK1985 IST'ye muhtemelen indi — tahmini 14:32 (yüksek güven)"
+  - "TK1985 büyük olasılıkla IST'ye indi — tahmini 14:32 (iniş anı doğrudan görülmedi)" (`high`)
+  - "TK1985 muhtemelen IST'ye indi — tahmini 14:32 (iniş anı doğrudan görülmedi)" (`medium`)
+  - "TK1985 için iniş verisi alınamadı: uçak IST yakınında alçak irtifada kapsama dışına çıktı"
   - "TK1985 IST'de pas geçti"
-- **Ölçüm:** iki gecikme raporlanır:
+- **Ölçüm:** İki gecikme raporlanır:
   - (a) motorun olayı yayınlaması → push sağlayıcısının 2xx yanıtı; hedef p95 < 3 sn
   - (b) örneğin `sampleTime`'ı → push sağlayıcısının kabulü; tazelik katmanı başına p50/p95
-- **Gerçek dünya doğrulaması (kullanıcıyla):**
-  - Yayından sonra sahibi en az 20 gerçek IST varışını takip eder.
-  - Rapora yazılanlar: telefona ulaşan 10 km ve iniş bildirimleri, `touchdown` / `probable_landing` dağılımı, kaçan ve yanlış olaylar.
-  - Sonuç iyi değilse DUR-SOR (eşik ayarı gerekebilir).
-- **Kabul:** Stub web push sunucusuna karşı zincir testi geçer: replay → olay → push. Kullanıcı kendi telefonunda test bildirimini alır.
+- **Kabul:**
+  - Stub web push sunucusuna karşı zincir testi geçer: replay → olay → push.
+  - Kullanıcıya bağlı `[k]`: gerçek dünya doğrulaması. Önkoşul: yayındaki `WEB_HOST` HTTPS ve iPhone'da PWA ana ekrana eklenmiş olmalıdır.
+    - Proje sahibi en az 20 gerçek IST varışında bildirim alır: en az 10'u tek uçuş/uçak takibiyle, en az 10'u filtreli istasyon akışıyla (ör. IST + THY).
+    - Gerçek iniş saatini havalimanının ya da havayolunun herkese açık uçuş durumu sayfasından elle not eder (kazıma yok).
+    - Rapor her varış için şunları listeler: gelen bildirimler, `touchdown`/`probable_landing`/`low`, tahmini ile gerçek iniş saati arasındaki fark, kaçan ve yanlış olaylar.
+    - Sonuç iyi değilse DUR-SOR (eşik ayarı gerekebilir).
 
 ## 2B — Hesaplar, takip, bildirim kanalları, yedekleme
 
@@ -122,90 +107,101 @@ Kapsama raporuna göre IST'de inişlerin çoğu `probable_landing` olacaktır (k
   - 6 haneli e-posta doğrulama kodu (15 dk geçerli)
   - şifre sıfırlama kodu
   - giriş denemesi sınırlaması (sayaçlar `redis-queue`'da, doğru istemci IP'siyle)
+- **SMTP:** Ayarlar env'den gelir (`SMTP_URL`, `SMTP_FROM`); yerelde Mailpit kullanılır.
 - **Oturum:**
   - 15 dk access JWT + 30 gün dönen refresh token.
   - Refresh token DB'de hash'li saklanır. Yeniden kullanım tespit edilirse o token ailesinin tamamı iptal edilir.
   - Web: httpOnly/Secure/SameSite=Lax çerez + CSRF koruması. `COOKIE_DOMAIN` env'den gelir (dev'de boş, host-only). `Secure` yalnızca üretimde zorunludur.
   - Mobil: bearer token + SecureStore.
-- **Roller:** `user` ve `admin`. İlk admin seed komutuyla `ADMIN_EMAIL` üzerinden oluşturulur. M4'teki geçici giriş bu sisteme taşınır.
+- **Roller:** `user` ve `admin`. İlk admin seed komutuyla `ADMIN_EMAIL` üzerinden oluşturulur.
+  - Parça 1'deki platform-admin sözleşmesi (`/api/auth/login`, `/api/admin/session`, `/api/auth/me`) artık gerçek admin hesabına bağlanır. Sözleşme ve 7 günlük opak token davranışı değişmez; analiz paneli çalışmaya devam eder.
+  - `ADMIN_SETUP_TOKEN` girişi admin hesabı oluşturulunca kapanır.
 - **KVKK ve mağaza gereklilikleri:**
   - Verilerimi indir (JSON).
-  - Hesabımı sil: anında pasifleştirilir. Kalıcı silme job'ı en geç 30 gün içinde kullanıcı, cihazlar, push token'ları, takipler ve bildirimleri siler ya da anonimleştirir. Yedeklerdeki kalış süresi belgelenir.
-- **Plan altyapısı:** tek plan `free`. Limitler config'ten gelir (ör. en fazla 20 takip, 5 istasyon akışı, saatlik push sınırı) ve sunucuda zorunlu tutulur. Ödeme arayüzü yoktur.
-- **`REGISTRATION_ENABLED`:** üretimde varsayılan `false`. Açılma koşulları: yedek/geri yükleme testi yeşil (M9), yasal metinler yayında (Parça 3) ve kullanıcı onayı (DUR-SOR).
-- SMTP ayarları env'den gelir; yerelde Mailpit kullanılır. Kullanıcı verisi tabloları ayrı bir şemadadır (ODbL dökümüne girmez).
-- **Kabul:** Integration testleri geçer: kayıt → Mailpit'ten kod → doğrulama → giriş; refresh rotasyonu ve yeniden kullanım tespiti; hesap silme job'ı.
+  - Hesabımı sil: hesap anında pasifleştirilir. Kalıcı silme job'ı en geç 30 gün içinde kullanıcıyı, cihazları, push token'larını, takipleri ve bildirimleri siler ya da anonimleştirir. Yedeklerdeki kalış süresi belgelenir.
+- **Plan altyapısı:** Tek plan `free`. Limitler config'ten gelir: en fazla 20 takip, 5 istasyon akışı, saatlik push sınırı (varsayılan 60; admin sınırsız, domain.md). Limitler sunucuda zorunlu tutulur. Ödeme arayüzü yoktur.
+- **Kayıt anahtarları:**
+  - `REGISTRATION_ENABLED`: üretimde varsayılan `false`. Açılma koşulları: yedek/geri yükleme testi yeşil (M9), yasal metinler yayında (Parça 3) ve kullanıcı onayı (DUR-SOR).
+  - `REGISTRATION_ALLOWLIST`: virgülle ayrılmış e-posta listesi. Kayıt kapalıyken yalnızca bu adresler kayıt olabilir (Play/TestFlight test kullanıcıları için).
+- **Veri ayrımı:** Kullanıcı verisi tabloları ayrı bir şemadadır; ODbL yöntem belgesinin ve olası dökümlerin dışında kalır.
+- **Kabul:** Integration testleri geçer:
+  - kayıt → Mailpit'ten kod → doğrulama → giriş
+  - refresh rotasyonu ve yeniden kullanım tespiti
+  - hesap silme job'ı
+  - platform-admin sözleşmesi gerçek admin hesabıyla (analiz uygulamasının davranışına göre)
 
 ### M6 — Takip, kurallar ve eşleştirici (`p2/m6-follows`)
-- Takip türleri ve **eşleşme durumları** (`pending | matched | completed | expired`) domain.md'deki gibidir.
-- İstasyon akışı filtreleri: havayolu, tip ve çağrı kodu öneki. Filtreli akışta her olaya push gider; filtresiz akışta push yoktur, yalnızca uygulama içi akış çalışır ve bu kullanıcıya açıkça söylenir.
+- **Takip türleri ve eşleşme:** Takip türleri, eşleşme durumları (`pending | matched | completed | expired | landing_unknown`) ve istasyon akışı kuralları domain.md'deki gibidir. "Gün" Europe/Istanbul'a göredir.
 - **Kural içeriği:**
-  - Olaylar: eşik seçimi, teker koyma/muhtemel iniş, pas geçme, kalkış.
-  - Mesafe referansı: ARP ya da hizalı eşik.
-  - Kanallar: mobil push, web push, uygulama içi.
-  - Sessiz saatler (+ "takip ettiğim uçuşun inişi yine gelsin" istisnası).
+  - Olaylar: uyarı mesafesi seçimi, iniş, pas geçme, kalkış.
+  - Mesafe referansı: havalimanı merkezi ya da hizalı pist eşiği (Uzman).
+  - Kanallar: mobil push, web push, bildirim merkezi.
+  - Sessiz saatler ("Takip ettiğim uçuşların iniş bildirimi sessiz saatlerde de gelsin" istisnasıyla).
   - iOS zamana duyarlı bildirim tercihi.
-- Takip listesi P1 toplu sorgusunu besler: `WATCH_HEX_LIST` yerine DB kullanılır.
-- **Eşleştirici:** olaylar abone indeksleriyle (hex, çağrı kodu, tescil, istasyon + filtre) eşlenir ve bildirim işleri üretilir.
+  - Varsayılanlar: tek dokunuşla takip = 10 km + iniş, açık olan bütün kanallar.
+- **P1 toplu sorgusu:** takip listesinden beslenir.
+- **Eşleştirici:** Olaylar abone indeksleriyle (hex, çağrı kodu, tescil, istasyon + filtre) eşlenir ve bildirim işleri üretilir.
+- **Filtre tahmini:** Filtreli istasyon akışı kurulurken "saatte yaklaşık N bildirim" tahmini son 7 günün olaylarından hesaplanır.
 - **Kabul:**
-  - Senaryo: TK1985 takibi, uçak THY4KN olarak uçarken `pending` kalır; arama canlı adayı gösterir, kullanıcı seçince `matched` olur.
-  - "Gün" sınırı Europe/Istanbul'a göre test edilir.
+  - TK1985 takibi, uçak THY4KN olarak uçarken `pending` kalır. Arama canlı adayı gösterir; kullanıcı seçince takip `matched` olur.
+  - "Gün" sınırı testi geçer.
+  - `landing_unknown` kapanışı bildirim üretir.
 
 ### M7 — Bildirim kanalları (`p2/m7-notifier`, worker `notifier` rolü)
-- **Kuyruk ve sınırlar:** BullMQ kullanılır. Saatlik push sınırı ve özet kuralları domain.md'deki gibidir; açıkça takip edilen uçuşun iniş bildirimi özete çevrilmez.
+- **Kuyruk ve sınırlar:** BullMQ kullanılır. Saatlik sınır ve özet kuralları domain.md'deki gibidir; iniş bildirimleri özete çevrilmez.
 - **Expo push** (`expo-server-sdk` ^7.2; ESM, Node ≥ 22.12):
   - Gönderim: 100'lük parçalar, `600/sn` sınırı, `TOO_MANY_REQUESTS`'te geri çekilme.
-  - Mesaj: `priority: "high"`, `sound: "default"`, `channelId: "flight-alerts"` (Android), `threadId: <flightId>` (iOS), `tag: <flightId>-<event>` (Android). Kullanıcı tercihi açıksa iOS için `interruptionLevel: "time-sensitive"` eklenir.
-  - Doğrudan APNs yolu **yazılmaz**; Expo bu alanı destekliyor.
+  - Mesaj alanları: `priority: "high"`, `sound: "default"`, `channelId: "flight-alerts"` (Android), `categoryId: "flight-event"`, `threadId: <flightId>` (iOS), `tag: <flightId>-<event>` (Android). Kullanıcı tercihi açıksa iOS için `interruptionLevel: "time-sensitive"`, değilse `"active"`.
+  - Doğrudan APNs yolu yazılmaz.
   - Receipt kontrolü 15 dk sonra yapılır (en geç 24 saat). `DeviceNotRegistered` ticket'ta ya da receipt'te gelirse token silinir.
-  - `EXPO_ACCESS_TOKEN` (enhanced security) desteklenir.
+  - `EXPO_ACCESS_TOKEN` desteklenir.
 - **Web Push:** M4'teki gönderici çok kullanıcılı hâle getirilir.
-- **Uygulama içi gelen kutusu:** DB'de tutulur, WS ile gerçek zamanlı iletilir. Muhtemel inişte güven düzeyi belirtilir. Kesinti sırasında kaçan olaylar gelen kutusuna "kesinti sırasında" etiketiyle yazılır ve sonradan push olarak gönderilmez.
-- **Saat biçimi:** kullanıcının tercihine göre (yerel ya da UTC "Z").
-- **Kabul:** Expo ve Web Push göndericilerinin stub sunuculara karşı integration testleri geçer: parçalama, receipt, `DeviceNotRegistered` temizliği, 410 temizliği. Gecikme ölçümü (a) 500 olayda p95 < 3 sn.
+- **Bildirim merkezi (uygulama içi kanal):** DB'de tutulur ve WS ile anında iletilir. Muhtemel inişte güven düzeyi belirtilir. Kesinti sırasında kaçan olaylar domain.md'deki etiketlerle yazılır ("Veri kesintisi: iniş doğrulanamadı" / "Kesinti sonrası doğrulandı") ve sonradan push olarak gönderilmez.
+- **Saat biçimi:** Kullanıcının tercihine göre (yerel ya da UTC "Z").
+- **Kabul:**
+  - Expo ve Web Push göndericilerinin stub sunuculara karşı integration testleri geçer: parçalama, receipt, `DeviceNotRegistered` temizliği, 410 temizliği.
+  - Gecikme ölçümü (a) 500 olayda p95 < 3 sn.
 
-### M8 — API uç noktaları (`p2/m8-api`)
+### M8a — Hesap, takip ve bildirim uç noktaları (`p2/m8a-api-user`)
 - **Hesap:** auth, `me`, ayarlar.
 - **Cihaz kayıtları:** Expo token, web push aboneliği.
-- **Takip:** takip ve kural CRUD, eşleşme durumu.
+- **Takip:** takip ve kural CRUD, eşleşme durumu, uçuş bazında susturma (`POST /v1/follows/{id}/mute`, süre parametreli).
 - **Bildirimler:** liste, okundu işaretleme.
+- **WS kanalı:** bildirim merkezi (yetkili).
+- **Kabul:**
+  - `pnpm openapi:check`: üretilen şema commit'li olanla aynıdır.
+  - Her uç nokta için integration testi: yetkisiz → 401, başka kullanıcının kaynağı → 404.
+  - Yetkisiz WS aboneliği 4401 koduyla kapanır.
+
+### M8b — Arama, uçuş, istasyon ve admin uç noktaları (`p2/m8b-api-data`)
 - **Arama:** sefer no, çağrı kodu, tescil, hex, havalimanı.
 - **Uçuş:** detay, iz, olaylar, tahmini rota.
 - **İstasyon:**
   - liste
-  - varış panosu: yaklaşanlar, mesafe, ETA, durum, kapsama kalitesi
-  - **son 2 saatin inişleri ve kalkışları** (pist ve saatle)
+  - varış panosu: yaklaşanlar, mesafe, tahmini varış, durum, kapsama kalitesi
+  - son 2 saatin inişleri ve kalkışları (pist ve saatle)
   - METAR/TAF
   - operasyon panosu için filtreli akış
-- **Admin:** kullanıcılar, sağlayıcı sağlığı, bildirim kayıtları, engel listesi ve kaldırma talepleri, havayolu ve pist düzeltmeleri, limitler, disk kullanımı.
-- **WS kanalları** (yetkili): uçak detayı, istasyon panosu, gelen kutusu.
-- OpenAPI ve `.env.example` güncel tutulur.
+  - kapsama kalitesi job'ı (domain.md → "Kapsama kalitesi")
+- **Admin:** kullanıcılar, sağlayıcı sağlığı, bildirim kayıtları, engel listesi ve kaldırma talepleri, havayolu ve pist düzeltmeleri, limitler, disk kullanımı, `coverage:report` tetikleme.
+- **WS kanalları:** uçak detayı, istasyon panosu.
+- **Kabul:** M8a'daki kontrollerin aynısı bu uç noktalar için de geçer.
 
 ### M9 — Yedekleme ve üretim hazırlığı (`p2/m9-backup`)
-- Yedekleme infra.md → "Yedekleme" bölümüne göre kurulur (Dokploy Compose Backups + iz partition arşivi + yerel sınırlı yedek). `scripts/restore.sh` yazılır ve CI'da geri yükleme testi koşar.
-- `SENTRY_DSN` tanımlıysa hata takibi açılır. Uyarı job'ı ve heartbeat'ler infra.md → "Gözlem ve uyarı" bölümüne göre kurulur.
+- **Yedekleme:** infra.md → "Yedekleme" bölümüne göre `ut-worker-bg` içinde kurulur: iz tabloları hariç günlük `pg_dump`, S3, `backup_runs` tablosu, heartbeat, yerel sınırlı yedek. `scripts/restore.sh` yazılır ve CI'da geri yükleme testi koşar.
+- **Hata takibi ve uyarılar:** `SENTRY_DSN` tanımlıysa hata takibi açılır. Uyarı job'ı ve heartbeat'ler infra.md → "Gözlem ve uyarı" bölümüne göre kurulur.
 - **Kabul:**
   - Yedekten temiz bir DB'ye geri yükleme CI'da geçer.
   - Uyarı job'ı stub SMTP'ye doğru e-postaları gönderir.
-  - Kullanıcı Dokploy yedek hedefini kurduktan sonra bir gerçek yedek alınır ve bir kez geri yüklenir (kullanıcıyla).
+  - `[k]`: kullanıcı S3 hedefini girdikten sonra bir gerçek yedek alınır ve bir kez geri yüklenir.
 
 ## Uçtan uca (API seviyesinde)
-Kayıt → doğrulama → takibe alma → replay senaryosu → gelen kutusunda doğru olayların doğru sırayla görünmesi ve stub push sunucularında doğru mesajlar.
+Kayıt → doğrulama → takibe alma → replay senaryosu → bildirim merkezinde doğru olaylar doğru sırayla görünür ve stub push sunucularında doğru mesajlar bulunur.
 
 ## Tamamlanma kriterleri
 - [ ] Parça 1 kriterleri hâlâ yeşil.
-- [ ] Tüm senaryolar geçer. Kalkış, üstten geçiş, bekleme, SAW ve kesinti senaryolarında yanlış alarm yoktur.
-- [ ] Sahibi gerçek IST varışlarında telefonuna bildirim aldı. 20 varışlık doğrulama rapora yazıldı.
+- [ ] Tüm senaryolar geçer. Kalkış, üstten geçiş, bekleme, SAW ve kesinti senaryolarında yanlış push yoktur.
+- [ ] `[k]` Proje sahibi gerçek IST varışlarında telefonuna bildirim aldı; 20 varışlık doğrulama rapora yazıldı.
 - [ ] Motor performansı ve iki gecikme metriği ölçülüp raporlandı.
-- [ ] Yedek alma ve geri yükleme test edildi. Uyarılar çalışıyor.
+- [ ] Yedek alma ve geri yükleme test edildi; uyarılar çalışıyor.
 - [ ] OpenAPI, `.env.example`, `docs/ACTIVATION.md` ve `docs/reports/parca-2.md` güncel.
-
-## Dış aktivasyon adımları (ACTIVATION'a ekle)
-- SMTP hesabı ve SPF/DKIM DNS kayıtları
-- VAPID anahtarlarının üretilmesi ve parola yöneticisine yedeklenmesi
-- `ADMIN_EMAIL`
-- Expo erişim token'ı (Parça 4'te kullanılır)
-- S3 uyumlu yedek deposu (B2/R2) ve Dokploy Backups ayarı
-- Dış uptime izleme ve heartbeat URL'leri
-- Opsiyonel: Sentry
-- **Erken başlatılacaklar:** Apple Developer Program üyeliği (kimlik doğrulaması günler sürebilir) ve Google Play Console hesabı. Kişisel Play hesabında üretim için 12 test kullanıcısıyla 14 günlük kapalı test şarttır.

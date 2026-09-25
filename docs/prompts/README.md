@@ -2,24 +2,32 @@
 
 Bu dizindeki dosyalar Claude Code'a verilecek görev tanımlarıdır. Oturum başında otomatik yüklenmezler; bir parçayı başlatırken `@` ile anılırlar. Her zaman geçerli kurallar kök `CLAUDE.md`'dedir.
 
+## Başlamadan önce (bir kez, senin yapacakların)
+1. **Kurulum:** Git for Windows, Node 24 LTS, `npm i -g pnpm@12.6.0`, Docker Desktop (WSL 2 ile), GitHub CLI (`gh`), Claude Code.
+2. **Repo:** GitHub'da boş ve **özel** bir repo aç: github.com/new → ad `ucus-takip`, README, lisans ve .gitignore **eklemeden**. İlk push'u Claude yapar; bu, `main`'e yapılan tek doğrudan push'tur (D-024).
+3. **gh girişi:** `gh auth login` yap. Claude CI'yı izlemek ve PR'ları yönetmek için bunu kullanır.
+4. **Host ve e-posta:** Geçici host'u (mevcut domain'in alt alanı ya da sslip.io) ve `CONTACT_EMAIL` adresini belirle (bkz. `docs/ACTIVATION.md`).
+5. **Başlat:** Claude Code'u `C:\PROJELER\ucus-takip` klasöründe aç ve `@docs/prompts/parca-1.md dosyasındaki Parça 1'e başla` yaz.
+
 ## Sıra
 | # | Dosya | Çıktı |
 |---|---|---|
-| 1 | `parca-1.md` | Push → CI → GHCR → Dokploy yayın hattı, canlı harita, arama, 24 saatlik kapsama ölçümü |
-| 2 | `parca-2.md` | 2A: olay motoru + **sahibine ilk gerçek bildirim** · 2B: hesaplar, takip, kanallar, yedekleme |
+| 1 | `parca-1.md` | Yayın hattı, bütün servisler (admin ve analiz dahil), canlı harita, arama, kapsama raporu |
+| 2 | `parca-2.md` | 2A: olay motoru + **proje sahibine ilk gerçek bildirim** · 2B: hesaplar, takip, kanallar, yedekleme |
 | 3 | `parca-3.md` | Web ürününün tamamı: tasarım, operasyon panosu, PWA, yasal sayfalar, admin, CSP |
 | 4 | `parca-4.md` | 4A: Android öncelikli minimal uygulama + Play kapalı test · 4B: iOS, mağaza, sertleştirme |
 | 5 | `parca-5-opsiyonel.md` | Tarife sağlayıcısı ve ödeme (bütçe kararıyla) |
 
-4A, Parça 3'ten önce de yapılabilir. Play'in 14 günlük kapalı test süresini erken başlatmak için bu sıra tercih edilebilir.
+4A, Parça 3'ten önce de yapılabilir. Önkoşullar `parca-4.md` → "Sıra notu" bölümündedir: gizlilik ve `/hesap-silme` sayfaları öne alınır, test kullanıcıları `REGISTRATION_ALLOWLIST` ile kaydolur.
 
 ## Bir oturum nasıl yürür
-1. Proje klasöründe Claude Code'u aç (`C:\PROJELER\ucus-takip`).
-2. Yeni parça: `@docs/prompts/parca-N.md dosyasındaki Parça N'e başla`. Ajan planı `docs/plans/parca-N.md`'ye yazar ve **onayını bekler**.
-3. Devam eden parça: `Parça N'e devam et`. Ajan plan dosyasından ilk tamamlanmamış kilometre taşını bulur.
-4. Her kilometre taşının sonunda ajan durur ve özet verir. "Push edip PR açayım mı?" diye sorar.
-5. PR'daki CI yeşilse GitHub'da PR'ı **sen** birleştirirsin. Birleştirme = üretime yayın.
-6. Bağlam dolmaya başlarsa `/clear` yap ve 3. adımla devam et; ilerleme plan dosyasındadır.
+1. **Yeni parça:** `@docs/prompts/parca-N.md dosyasındaki Parça N'e başla`. Claude planı `docs/plans/parca-N.md`'ye yazar ve **onayını bekler**.
+2. **Devam:** `Parça N'e devam et`. Claude plan dosyasından ilk tamamlanmamış kilometre taşını bulur.
+3. **Kilometre taşı sonu:** Claude teslimatları hazırlar: sürüm, Yenilikler, README, satır sayısı, yerel önizleme ve zip yedek. Sonra dalı push'lar ve PR açar. **CI yeşilse PR'ı kendisi birleştirir** (senin kararın, 2026-09-25) ve yayını doğrular.
+4. **Senin adımların:** Senden bir şey gerekirse (Dokploy ayarı, hesap, gerçek cihaz testi), Claude durur ve sorar. Bu adımlar `docs/ACTIVATION.md`'de birikir.
+5. **Bağlam:** Bağlam dolmaya başlarsa `/clear` yap ve 2. adımla devam et; ilerleme plan dosyasındadır.
 
-## Senin yapacağın dış adımlar
-Tamamı `docs/ACTIVATION.md`'de tek listede durur ve her parçada güncellenir.
+## Yayın nasıl çalışır
+- Birleştirilen her PR üretime yayındır; site 10–20 dk içinde güncellenir.
+- Kendin düzenleyip doğrudan `main`'e push edersen aynı kontroller çalışır; yeşilse yine yayına çıkar. Özel repo + ücretsiz planda dal koruması olmadığı için bu engellenmez.
+- Dokploy kurulumu bitene kadar (`DEPLOY_ENABLED=false`) CI yeşil kalır ama yayın yapılmaz. İş özetinde "YAYINLANMADI" yazar.
