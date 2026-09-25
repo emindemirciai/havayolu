@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Windows'ta package.json script'leri cmd.exe yerine pnpm'in kabuk öykünücüsüyle çalışır.
+shellEmulator: true
+
+# Kurulum sırasında derleme script'i çalıştırmasına izin verilen paketler (pnpm 11+).
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true

@@ -2,6 +2,13 @@
 
 Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en üsttedir.
 
+## 2026-09-25 — Parça 1 M0 uygulama kararları
+- **D-046 turbo 2.11.3 ve vitest 5.0.1'e sabitlendi.** 2.11.4 ve 5.0.2 24 saatten yeniydi; pnpm bunları `minimumReleaseAgeExclude` istisnasıyla kurmak istedi. Tedarik zinciri korumasını delmek yerine bir önceki sürümler seçildi.
+- **D-047 API portu ortama göre varsayılır.** `API_PORT` boşsa üretimde 4000 (konteyner), yerelde 4100 kullanılır. Dinleme adresi `API_LISTEN_HOST`'tur; `API_HOST` genel alan adıdır.
+- **D-048 Geliştirmede env yükleme sırası `.env` → `.env.example`.** Ajan `.env` okuyamaz ve yazamaz; uygulama `.env.example`'daki sır olmayan varsayılanlarla eksiksiz açılır.
+- **D-049 `next-env.d.ts` git'e girmez.** `next typegen` üretir; biçim denetiminden de çıkarıldı.
+- **D-050 Dil tercihi M0'da çerezle tutulur.** URL tabanlı `/en/...` yönlendirmesi Parça 3 M2'de gelir.
+
 ## 2026-09-25 — Dört açılı inceleme sonrası düzeltmeler ve yeni kullanıcı kararları
 Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tutarlılık, yürütülebilirlik, hedefe uygunluk ve dil. 129 bulgunun kabul edilenleri işlendi.
 

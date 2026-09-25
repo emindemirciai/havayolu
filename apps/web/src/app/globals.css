@@ -1,0 +1,286 @@
+/* Geçici, sade görünüm. Asıl tasarım sistemi Parça 3'te docs/DESIGN.md ile gelir. */
+:root {
+  color-scheme: light dark;
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #0f1a2b;
+  --muted: #56637a;
+  --line: #d9dee7;
+  --accent: #1f5fd1;
+  --ok: #18794e;
+  --down: #b42318;
+  --sign: #f2c230;
+  --sign-ink: #111111;
+  --radius: 6px;
+  --font-ui: 'Overpass', system-ui, sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --surface: #111a2c;
+    --ink: #e6ebf3;
+    --muted: #9aa7bd;
+    --line: #24324b;
+    --accent: #7fb0ff;
+    --ok: #4cc38a;
+    --down: #ff6b5e;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:focus-visible {
+  outline: 3px solid var(--sign);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.mono {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+.brand-mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 0 0 5px var(--line);
+}
+
+.site-nav {
+  display: flex;
+  gap: 1.1rem;
+  align-items: center;
+}
+
+.site-nav a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lang-toggle {
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.site-main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.site-footer {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  padding: 1.25rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.page h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+}
+
+.page h2 {
+  font-size: 1.25rem;
+  margin: 2rem 0 0.5rem;
+}
+
+.lead {
+  color: var(--muted);
+  margin: 0 0 1.5rem;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.facts > div {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+}
+
+.facts dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.facts dd {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+}
+
+.state {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.state-ok,
+.state-done {
+  color: var(--ok);
+}
+
+.state-down {
+  color: var(--down);
+}
+
+.state-in_progress,
+.state-current {
+  background: var(--sign);
+  color: var(--sign-ink);
+  border-color: var(--sign);
+}
+
+.state-planned {
+  color: var(--muted);
+}
+
+.progress-label {
+  margin: 0 0 0.4rem;
+}
+
+.progress {
+  width: 100%;
+  height: 0.6rem;
+  accent-color: var(--accent);
+}
+
+.roadmap,
+.releases {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+}
+
+.milestone {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.milestone-part {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.release {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.release-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.release-meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.3rem 0 0.6rem;
+}
+
+.release-items {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.release-items li + li {
+  margin-top: 0.35rem;
+}
+
+.try-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.9rem 0 0;
+}
+
+.try-link {
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .milestone {
+    grid-template-columns: 1fr auto;
+  }
+  .milestone-part {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

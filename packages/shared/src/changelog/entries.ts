@@ -1,0 +1,77 @@
+import type { ChangelogEntry } from './types'
+
+/**
+ * Kullanıcıya dönük sürüm notlarının TEK kaynağı. En yeni sürüm en üsttedir.
+ * `pnpm changelog` bu listeden CHANGELOG.md üretir; web'deki /yenilikler sayfası da buradan okur.
+ * Maddeler teknik ayrıntı değil, kullanıcının ne kazandığını anlatır.
+ */
+export const CHANGELOG: readonly ChangelogEntry[] = [
+  {
+    version: '0.2.0',
+    date: '2026-09-25',
+    title: {
+      tr: 'İlk yerel test ortamı: Durum ve Yenilikler sayfaları',
+      en: 'First local test environment: Status and What’s new pages',
+    },
+    items: [
+      {
+        tr: 'Uygulama artık bilgisayarında tek komutla (pnpm dev) açılıyor. Deploy’u beklemeden her değişikliği yerelde görebilirsin.',
+        en: 'The app now starts on your computer with a single command (pnpm dev), so you can see every change locally without waiting for a deploy.',
+      },
+      {
+        tr: 'Durum sayfası: uygulama sürümü, sunucu (API) bağlantısı ve yol haritasındaki ilerleme tek ekranda.',
+        en: 'Status page: app version, server (API) connection and roadmap progress on one screen.',
+      },
+      {
+        tr: 'Yenilikler sayfası: her sürümde neler geldiği ve o sürümde deneyebileceğin sayfalara doğrudan bağlantılar.',
+        en: 'What’s new page: what arrived in each version, with direct links to the pages you can try in that version.',
+      },
+      {
+        tr: 'Türkçe ve İngilizce arasında tek tıkla geçiş. Seçimin hatırlanır.',
+        en: 'One-click switch between Turkish and English. Your choice is remembered.',
+      },
+      {
+        tr: 'Açık ve koyu tema, sistem ayarına otomatik uyar.',
+        en: 'Light and dark themes follow your system setting automatically.',
+      },
+      {
+        tr: 'Proje kodu MIT lisansıyla yayımlandı. Uçuş verisi kendi lisansında (ADSB.lol, ODbL) kalıyor.',
+        en: 'The project code is released under the MIT license. Flight data keeps its own license (ADSB.lol, ODbL).',
+      },
+    ],
+    tryLinks: [
+      { path: '/durum', label: { tr: 'Durum sayfası', en: 'Status page' } },
+      { path: '/yenilikler', label: { tr: 'Yenilikler sayfası', en: 'What’s new page' } },
+    ],
+  },
+  {
+    version: '0.1.0',
+    date: '2026-09-25',
+    title: {
+      tr: 'Proje kuruldu ve yol haritası netleşti',
+      en: 'Project set up and roadmap defined',
+    },
+    items: [
+      {
+        tr: 'Uçuş verisinin nereden geleceği belirlendi: canlı konumlar ADSB.lol’den (ücretsiz, ticari kullanıma açık), havalimanı ve pist bilgisi OurAirports’tan, havayolu ve rota tahmini VRS standing-data’dan, hava durumu NOAA’dan.',
+        en: 'Data sources chosen: live positions from ADSB.lol (free, commercial use allowed), airports and runways from OurAirports, airlines and estimated routes from VRS standing-data, weather from NOAA.',
+      },
+      {
+        tr: 'Bütün veri kaynakları ve lisansları 2026-09-25 itibarıyla tek tek doğrulandı. Ticari kullanıma izin vermeyen kaynaklar ve Flightradar24’ün resmi API’si kapsam dışı bırakıldı.',
+        en: 'Every data source and its license was verified as of 2026-09-25. Sources that forbid commercial use, and the official Flightradar24 API, are excluded.',
+      },
+      {
+        tr: 'Yayın düzeni tasarlandı: GitHub’a gönderilen kod otomatik test edilir, sonra Dokploy üzerinden yayına alınır.',
+        en: 'Release pipeline designed: code pushed to GitHub is tested automatically, then deployed through Dokploy.',
+      },
+      {
+        tr: 'Geliştirme 5 parçaya ve kilometre taşlarına bölündü. İlk hedefler sırasıyla canlı harita, “uçağım istasyona 10 km yaklaştı” ve “indi” bildiriminin telefonuna gelmesi, ardından mobil uygulama.',
+        en: 'Development split into 5 parts with milestones. First goals, in order: the live map, then the “my aircraft is 10 km from the station” and “landed” alerts reaching your phone, then the mobile app.',
+      },
+      {
+        tr: 'Bilinen sınır açıkça yazıldı: kendi ADS-B alıcımız olmadığı için inişler çoğu zaman “muhtemelen indi (tahmini saat)” olarak bildirilecek.',
+        en: 'Known limitation stated up front: without our own ADS-B receiver, landings will often be reported as “probably landed (estimated time)”.',
+      },
+    ],
+  },
+]
