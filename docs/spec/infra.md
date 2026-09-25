@@ -32,7 +32,7 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
   - `docker-compose.build.yml` yerelde imaj derlemek içindir: her uygulama servisine `build:` ve `pull_policy: build` ekler.
   - `docker-compose.dev.yml` altyapıyı sağlar: PostGIS, iki Redis, Mailpit, MinIO; yerel portları CLAUDE.md'dekilerdir. Uygulamalar yerelde `pnpm dev` ile çalışır.
 - **Adlar ve ağ:**
-  - Servis adları `ut-` önekiyle projeye özgüdür; paylaşılan `dokploy-network`'te ad çakışması olmaz.
+  - Servis adları `hy-` önekiyle projeye özgüdür; paylaşılan `dokploy-network`'te ad çakışması olmaz.
   - **Traefik etiketi yazılmaz, `dokploy-network` tanımlanmaz.** Domain'ler Dokploy arayüzünden eklenir (`hy-web` → `WEB_HOST` port 3000, `hy-api` → `API_HOST` port 4000); etiketleri Dokploy ekler.
   - `ports` yerine `expose` kullanılır. Postgres ve Redis dışarı port açmaz.
 - **Env:**

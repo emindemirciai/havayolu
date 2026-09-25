@@ -2,7 +2,7 @@
 // - Hiçbir serviste `build:` yok (imajlar GHCR'dan çekilir).
 // - Uygulama imajları ghcr.io/emindemirciai/havayolu-* ve pull_policy: always.
 // - Her serviste bellek limiti ve log rotasyonu var; hiçbir servis host portu yayınlamıyor.
-// - Servis adları `ut-` önekli.
+// - Servis adları `hy-` önekli.
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
