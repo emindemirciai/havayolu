@@ -40,7 +40,7 @@ FR24 premium benzeri derinlik: canlı harita, uçuş detayı, grafikler, geçmi�
 
 ## Sürüm pinleri (doğrulama 2026-09-25; yükseltme = ayrı PR)
 - **Çalışma ortamı ve dil:** Node 24 (`.nvmrc` 24; Node 26 LTS'ye geçiş 2026-10-28 sonrası ayrı PR, kullanıcı onayıyla) · pnpm 12.6 (`packageManager`; corepack'e güvenme) · **typescript 6.0.x** (TS 7 native henüz yok: typescript-eslint `<6.1` istiyor) · zod 4.
-- **Araçlar ve test:** eslint 10 + typescript-eslint 8.70 · turbo 2.11 · vitest 5 · @playwright/test 1.63.
+- **Araçlar ve test:** eslint 10 + typescript-eslint 8.70 · turbo 2.11 (2.11.3) · vitest 5 (5.0.1) · @playwright/test 1.63.
 - **Web ve backend:**
   - next 16.3 · **react 19.3 yalnızca web**: mobilde React sürümünü Expo SDK belirler, ortak paketler `react`'i yalnızca peer olarak alır
   - fastify 5.x (6-alpha değil) · @fastify/websocket 11
@@ -171,6 +171,8 @@ Sıra: 1–4 commit'ten önce yapılır ve aynı commit'e girer. 5 commit'ten so
 | `pnpm ci:full` | `ci:local` + `test:integration` + `test:e2e` (ilgili testler eklendikçe; Docker gerekir) |
 | `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm build` | Tekil kontroller |
 | `pnpm check:eol` | Depoda CRLF'li metin dosyası olmadığını doğrular |
+| `pnpm typecheck:scripts` | `scripts/*.mts` tip denetimi |
+| `pnpm format` | Prettier ile biçimlendirir |
 | `pnpm changelog` · `pnpm changelog:check` | CHANGELOG.md üretir · sürüm ve changelog tutarlılığını denetler |
 | `pnpm stats` | Satır sayısı |
 | `pnpm backup` | Temiz zip yedek |

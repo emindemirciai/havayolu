@@ -39,3 +39,6 @@ Thumbs.db
 
 # Claude Code yerel ayarları
 .claude/settings.local.json
+
+# Next.js otomatik üretir
+next-env.d.ts

@@ -1,0 +1,37 @@
+import { describe, expect, it } from 'vitest'
+import {
+  assertProvidersAllowed,
+  PROVIDER_LICENSES,
+  ProviderLicenseError,
+  type ProviderLicense,
+} from './license'
+
+const nonCommercial: ProviderLicense = {
+  ...PROVIDER_LICENSES.adsbLol,
+  id: 'example',
+  name: 'Ticari olmayan örnek kaynak',
+  commercialUse: false,
+}
+
+describe('lisans kaydı', () => {
+  it('kayıttaki tüm sağlayıcılar ticari modda başlatılabilir', () => {
+    expect(() =>
+      assertProvidersAllowed('commercial', Object.values(PROVIDER_LICENSES)),
+    ).not.toThrow()
+  })
+
+  it('ticari modda ticari olmayan sağlayıcı reddedilir', () => {
+    expect(() => assertProvidersAllowed('commercial', [nonCommercial])).toThrow(
+      ProviderLicenseError,
+    )
+  })
+
+  it('ticari olmayan modda denetim uygulanmaz', () => {
+    expect(() => assertProvidersAllowed('noncommercial', [nonCommercial])).not.toThrow()
+  })
+
+  it('adsb.lol atfı ODbL bağlantısı taşır ve türetilmiş veritabanı paylaşım şartı işaretlidir', () => {
+    expect(PROVIDER_LICENSES.adsbLol.attribution.licenseUrl).toContain('odbl')
+    expect(PROVIDER_LICENSES.adsbLol.shareAlike).toBe('derivative-database')
+  })
+})

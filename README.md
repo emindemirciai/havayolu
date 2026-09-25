@@ -2,7 +2,7 @@
 
 **[Türkçe](#türkçe) · [English](#english)**
 
-![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.1.0-blue) ![lisans](https://img.shields.io/badge/lisans-MIT-green) ![durum](https://img.shields.io/badge/durum-kurulum-lightgrey)
+![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.2.0-blue) ![lisans](https://img.shields.io/badge/lisans-MIT-green) ![durum](https://img.shields.io/badge/durum-geli%C5%9Ftirme-yellow)
 
 ---
 
@@ -14,11 +14,11 @@ Türkiye odaklı sivil havacılık uçuş takip platformu. Canlı harita, uçuş
 
 > **Bilinen sınır:** Kendi ADS-B alıcımız olmadığı için İstanbul Havalimanı'nda iniş anı çoğunlukla doğrudan görülmez. İniş bildirimi çoğu uçuşta "muhtemelen indi (tahmini saat)" olarak ve son sinyalden 1–1,5 dk sonra gelir. Bazı uçuşlarda yalnızca "iniş verisi alınamadı" denebilir.
 
-### Durum — v0.1.0
+### Durum — v0.2.0
 | Alan | Durum |
 |---|---|
 | Yol haritası, veri kaynakları, mimari | ✅ Hazır ve doğrulandı |
-| Yerel test ortamı, Durum ve Yenilikler sayfaları | ⏳ Parça 1 · M0 |
+| Yerel test ortamı, Durum ve Yenilikler sayfaları | ✅ Parça 1 · M0 |
 | Bütün servisler + yayın hattı (web, API, admin, analiz, worker'lar, veritabanları) | ⏳ Parça 1 · M1 |
 | Canlı harita ve arama | ⏳ Parça 1 · M6 |
 | 10 km ve iniş bildirimi (web push) | ⏳ Parça 2 · M4 |
@@ -34,14 +34,14 @@ Sürüm geçmişi için [CHANGELOG.md](CHANGELOG.md) dosyasına bak. Uygulama i�
 - **Tazelik:** Haritadaki konumlar İstanbul çevresinde ~20 sn, diğer istasyonlarda ~30 sn, Doğu Türkiye'de ~90 sn gecikmeli olabilir (ücretsiz veri kaynağının hız sınırı).
 
 ### Yerelde çalıştırma
-Kod iskeleti Parça 1 · M0 ile geliyor. Sonra:
+Gereken: Node 24, pnpm 12.6 (`npm i -g pnpm@12.6.0`).
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-`http://localhost:3100/yenilikler` adresini aç. Bu makinede 3000–3003 portları başka bir projenin olduğu için web 3100, API 4100 portunda çalışır. Ayrıntılı komutlar `CLAUDE.md` → Komutlar bölümündedir.
+`http://localhost:3100/durum` ve `http://localhost:3100/yenilikler` adreslerini aç. Uygulama `.env.example`'daki varsayılanlarla eksiksiz açılır; `.env` gerekmez. Bu makinede 3000–3003 portları başka bir projenin olduğu için web 3100, API 4100 portunda çalışır. Ayrıntılı komutlar `CLAUDE.md` → Komutlar bölümündedir.
 
 ### Proje nasıl geliştiriliyor
 - `docs/prompts/README.md`: başlamadan önce yapılacaklar ve parçaların Claude Code ile nasıl çalıştırılacağı
@@ -49,8 +49,20 @@ pnpm dev
 - `docs/ACTIVATION.md`: elle yapılacak dış adımlar ve **maliyet özeti**
 - `docs/DECISIONS.md`: kararlar ve gerekçeleri
 
-### İstatistik
-v0.1.0 itibarıyla yalnızca belge ve yapılandırma var; uygulama kodu Parça 1 · M0 ile geliyor. Güncel satır sayısını `pnpm stats` verir.
+### İstatistik (v0.2.0)
+Git'te 90 dosya, **4.828 satır**. Bunun 2.062 satırı kod (TypeScript, TSX, CSS, JS), 2.071 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
+
+| Alan | Satır |
+|---|---|
+| docs | 1.646 |
+| apps/web | 770 |
+| packages/shared | 422 |
+| apps/api | 244 |
+| packages/i18n | 216 |
+| packages/providers | 197 |
+| scripts | 197 |
+| packages/geo | 152 |
+| diğer (kök, .claude, .github) | 984 |
 
 ### Lisans, veri ve atıflar
 - Kod [MIT lisansı](LICENSE) ile lisanslanmıştır.
@@ -69,11 +81,11 @@ A Türkiye-focused civil aviation flight tracker. It offers a live map and lets 
 
 > **Known limitation:** Without our own ADS-B receiver, the moment of touchdown at Istanbul Airport is usually not observed directly. For most flights the landing alert says "probably landed (estimated time)" and arrives 1–1.5 minutes after the last signal. For some flights it can only say "landing data unavailable".
 
-### Status — v0.1.0
+### Status — v0.2.0
 | Area | Status |
 |---|---|
 | Roadmap, data sources, architecture | ✅ Done and verified |
-| Local test environment, Status and What's new pages | ⏳ Part 1 · M0 |
+| Local test environment, Status and What's new pages | ✅ Part 1 · M0 |
 | All services + release pipeline (web, API, admin, analytics, workers, databases) | ⏳ Part 1 · M1 |
 | Live map and search | ⏳ Part 1 · M6 |
 | 10 km and landing alerts (web push) | ⏳ Part 2 · M4 |
@@ -89,14 +101,14 @@ See [CHANGELOG.md](CHANGELOG.md) for release history. The same content will appe
 - **Freshness:** positions may lag by ~20 s around Istanbul, ~30 s at other stations and ~90 s over eastern Türkiye (rate limit of the free data source).
 
 ### Run locally
-The code skeleton arrives with Part 1 · M0. Then:
+Requires Node 24 and pnpm 12.6 (`npm i -g pnpm@12.6.0`).
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Then open `http://localhost:3100/yenilikler`. On this machine ports 3000–3003 belong to another project, so the web app runs on 3100 and the API on 4100. Full command list: `CLAUDE.md` → Komutlar.
+Then open `http://localhost:3100/durum` and `http://localhost:3100/yenilikler`. The app starts with the defaults in `.env.example`; no `.env` is needed. On this machine ports 3000–3003 belong to another project, so the web app runs on 3100 and the API on 4100. Full command list: `CLAUDE.md` → Komutlar.
 
 ### How the project is built
 - `docs/prompts/README.md`: one-time setup and how to run each part with Claude Code
@@ -104,8 +116,8 @@ Then open `http://localhost:3100/yenilikler`. On this machine ports 3000–3003 
 - `docs/ACTIVATION.md`: manual external steps and the **cost summary**
 - `docs/DECISIONS.md`: decisions and rationale
 
-### Stats
-As of v0.1.0 there are only documents and configuration; application code arrives with Part 1 · M0. `pnpm stats` prints the current line count.
+### Stats (v0.2.0)
+90 files and **4,828 lines** in git: 2,062 lines of code (TypeScript, TSX, CSS, JS) and 2,071 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
 
 ### License, data and attribution
 - Code is licensed under the [MIT License](LICENSE).
