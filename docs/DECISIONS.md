@@ -7,7 +7,7 @@ Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en ü
   - Adlar: paket kapsamı `@havayolu/*`, GHCR imajları `ghcr.io/emindemirciai/havayolu-{web,api,worker}`, compose servis öneki `hy-`, Redis/çerez/olay öneki `hy`.
   - Yerel klasör `C:\PROJELER\havayolu`. Yedek klasörü kullanıcı isteğiyle masaüstündedir (`<Masaüstü>\havayolu-yedek`); `pnpm backup` masaüstünün gerçek yolunu Windows'tan sorar, `BACKUP_DIR` ile değiştirilebilir.
   - Uçuş sayfası yolu `/ucus/<flightId>` markadan bağımsızdır (Türkçe "uçuş") ve kalır.
-  - Tarihçe belgeleri (`docs/research/`, eski karar metinleri) eski kod adı `ucus-takip`'i korur.
+  - Eski kod adı kullanıcı isteğiyle repodaki bütün belgelerden, yerel klasörlerden, yedek adlarından ve Docker imajlarından kaldırıldı; her yerde yalnızca `havayolu` kullanılır.
 
 ## 2026-09-25 — Parça 1 M1a uygulama kararları
 - **D-051 ioredis 6 RESP2 ile kullanılır (`protocol: 2`).** ioredis 6 varsayılan olarak RESP3'e geçti. BullMQ ve Lua script'leriyle yanıt biçimi öngörülebilir kalsın diye RESP2 seçildi.
@@ -84,7 +84,7 @@ Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tu
 İlk prompt seti (ortak bağlam + 4 parça, 5 dosya) 17 ajanlı bir doğrulamadan geçirildi: kaynak doğrulama, şüpheci ikinci kontrol ve üç açıdan eleştiri. Ham notlar `docs/research/` altındadır.
 
 **Kapsam, kaynaklar ve lisanslar**
-- **D-001 Ad ve domain boş bırakıldı.** Kullanıcı "touchdown" istedi; .com/.app/.io/.net/.dev/.live/.aero uzantılarının hepsi kayıtlı çıktı (RDAP). Kod adı `ucus-takip`'tir; ad ve domain env'den okunur.
+- **D-001 Ad ve domain boş bırakıldı.** Kullanıcı "touchdown" istedi; .com/.app/.io/.net/.dev/.live/.aero uzantılarının hepsi kayıtlı çıktı (RDAP). Proje geçici bir kod adıyla başladı; ad ve domain env'den okunur. D-059 ile ad `havayolu`, domain `havayolu.live` oldu.
 - **D-002 İmajlar GitHub Actions'ta derlenir ve GHCR'a gönderilir; Dokploy yalnızca çeker.** VPS paylaşımlı; Dokploy'un kendi dokümanı sunucuda build'in sunucuyu dondurabileceğini söylüyor.
 - **D-003 v1'de yalnızca ücretsiz veri kullanılır.** adsb.lol tek canlı kaynaktır. Ticari tarife sağlayıcısı Parça 5'e bırakıldı.
 - **D-004 Birincil istasyon IST (LTFM).**
