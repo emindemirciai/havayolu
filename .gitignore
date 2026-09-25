@@ -1,0 +1,41 @@
+# bağımlılıklar ve derleme çıktıları
+node_modules/
+.pnpm-store/
+dist/
+build/
+.next/
+out/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# ortam ve sırlar (.env.example hariç)
+.env
+.env.*
+!.env.example
+*.p8
+*.jks
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# mobil
+.expo/
+apps/mobile/android/
+apps/mobile/ios/
+
+# test ve araç çıktıları
+playwright-report/
+test-results/
+.lighthouseci/
+tools/**/recordings/tmp/
+
+# editör ve işletim sistemi
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Claude Code yerel ayarları
+.claude/settings.local.json
