@@ -2,13 +2,20 @@
 
 Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en üsttedir.
 
+## 2026-09-25 — Marka ve alan adı
+- **D-059 Marka `havayolu`, alan adı `havayolu.live` (kullanıcı kararı; D-001'in yerini alır).** Repo `emindemirciai/havayolu` (özel). Host'lar: `havayolu.live` (web; `www` köke 308 ile yönlenir), `api.havayolu.live`, `admin.havayolu.live`, `analiz.havayolu.live`.
+  - Adlar: paket kapsamı `@havayolu/*`, GHCR imajları `ghcr.io/emindemirciai/havayolu-{web,api,worker}`, compose servis öneki `hy-`, Redis/çerez/olay öneki `hy`.
+  - Yerel klasör `C:\PROJELER\havayolu`. Yedek klasörü kullanıcı isteğiyle masaüstündedir (`<Masaüstü>\havayolu-yedek`); `pnpm backup` masaüstünün gerçek yolunu Windows'tan sorar, `BACKUP_DIR` ile değiştirilebilir.
+  - Uçuş sayfası yolu `/ucus/<flightId>` markadan bağımsızdır (Türkçe "uçuş") ve kalır.
+  - Eski kod adı kullanıcı isteğiyle repodaki bütün belgelerden, yerel klasörlerden, yedek adlarından ve Docker imajlarından kaldırıldı; her yerde yalnızca `havayolu` kullanılır.
+
 ## 2026-09-25 — Parça 1 M1a uygulama kararları
 - **D-051 ioredis 6 RESP2 ile kullanılır (`protocol: 2`).** ioredis 6 varsayılan olarak RESP3'e geçti. BullMQ ve Lua script'leriyle yanıt biçimi öngörülebilir kalsın diye RESP2 seçildi.
 - **D-052 MinIO geliştirme compose'una eklenmedi.** MinIO artık Docker Hub'da imaj yayımlamıyor. S3 emülatörü yalnızca yedek testleri için gerekiyor; Parça 2 M9'da güncel bir alternatif seçilecek.
 - **D-053 Turbo `envMode: loose`.** Turbo 2'nin strict modu kabuktan verilen değişkenleri (ör. yerel `ADMIN_EMAIL`) geliştirme sunucularına aktarmıyordu. Önbellekli görevler (`build`) değişkenlerini zaten açıkça listeler.
 - **D-054 API, worker ve migrate tek dosyaya paketlenir (esbuild, bağımlılıklar dahil).** Üretim imajları `node_modules` taşımaz; imajlar 336–387 MB, boşta toplam bellek ~270 MB.
-- **D-055 `@ucus/db` = veri depoları paketi.** PostgreSQL (Drizzle) ile birlikte Redis istemci fabrikası ve worker heartbeat yardımcılarını da içerir.
-- **D-056 Yönetici oturumu:** opak rastgele token, Redis'te SHA-256 özetiyle, 7 gün geçerli. Web tarafında `ut_admin` çerezi httpOnly, SameSite=Strict ve yalnızca `/admin` yolunda gönderilir.
+- **D-055 `@havayolu/db` = veri depoları paketi.** PostgreSQL (Drizzle) ile birlikte Redis istemci fabrikası ve worker heartbeat yardımcılarını da içerir.
+- **D-056 Yönetici oturumu:** opak rastgele token, Redis'te SHA-256 özetiyle, 7 gün geçerli. Web tarafında `hy_admin` çerezi httpOnly, SameSite=Strict ve yalnızca `/admin` yolunda gönderilir.
 - **D-057 Beklenen worker listesi env'den gelir** (`EXPECTED_WORKERS`; üretimde `worker-rt,worker-bg`). Heartbeat'i olmayan beklenen worker panelde "Çalışmıyor" görünür.
 - **D-058 Onay sabitleri ortak modüldedir (`lib/consent.ts`).** Next.js'te `'use client'` dosyasından sunucu bileşenine sabit import edilemez; değer yerine istemci referansı gelir.
 
@@ -42,7 +49,7 @@ Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tu
 - **D-033 Dokploy secrets yokken deploy `DEPLOY_ENABLED` değişkeniyle atlanır.** İş özetine "YAYINLANMADI" yazılır (D-023'ün uygulaması).
 
 **Veritabanı ve yedekleme**
-- **D-034 Yedeği uygulamanın kendi job'ı alır (`ut-worker-bg`).** Dokploy Compose Backups kullanılmaz: komutu sabittir ve iz tablolarını dışlayamaz.
+- **D-034 Yedeği uygulamanın kendi job'ı alır (`hy-worker-bg`).** Dokploy Compose Backups kullanılmaz: komutu sabittir ve iz tablolarını dışlayamaz.
   - İz tabloları yedeğe girmez; v1'de partition arşivi ve günlük ODbL dökümü yoktur.
   - `/acik-veri` sayfası ODbL 4.6(b) uyarınca yöntem belgesi sunar.
 - **D-035 Partition bakımında `DETACH … CONCURRENTLY` kullanılmaz** (DEFAULT partition varken PostgreSQL izin vermez). Silme gece yapılır: `lock_timeout` ile `DETACH` + `DROP`.
@@ -77,7 +84,7 @@ Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tu
 İlk prompt seti (ortak bağlam + 4 parça, 5 dosya) 17 ajanlı bir doğrulamadan geçirildi: kaynak doğrulama, şüpheci ikinci kontrol ve üç açıdan eleştiri. Ham notlar `docs/research/` altındadır.
 
 **Kapsam, kaynaklar ve lisanslar**
-- **D-001 Ad ve domain boş bırakıldı.** Kullanıcı "touchdown" istedi; .com/.app/.io/.net/.dev/.live/.aero uzantılarının hepsi kayıtlı çıktı (RDAP). Kod adı `ucus-takip`'tir; ad ve domain env'den okunur.
+- **D-001 Ad ve domain boş bırakıldı.** Kullanıcı "touchdown" istedi; .com/.app/.io/.net/.dev/.live/.aero uzantılarının hepsi kayıtlı çıktı (RDAP). Proje geçici bir kod adıyla başladı; ad ve domain env'den okunur. D-059 ile ad `havayolu`, domain `havayolu.live` oldu.
 - **D-002 İmajlar GitHub Actions'ta derlenir ve GHCR'a gönderilir; Dokploy yalnızca çeker.** VPS paylaşımlı; Dokploy'un kendi dokümanı sunucuda build'in sunucuyu dondurabileceğini söylüyor.
 - **D-003 v1'de yalnızca ücretsiz veri kullanılır.** adsb.lol tek canlı kaynaktır. Ticari tarife sağlayıcısı Parça 5'e bırakıldı.
 - **D-004 Birincil istasyon IST (LTFM).**
@@ -99,8 +106,8 @@ Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tu
 **Mimari ve araçlar**
 - **D-012 Redis ikiye bölündü:** `redis-queue` (BullMQ, AOF, noeviction) ve `redis-live` (kalıcı değil, volatile-ttl).
 - **D-013 İz verisi iki tabloya bölündü:** sampled 7 gün, fine 30 gün.
-- **D-014 Tek seferlik `ut-migrate` servisi** ve expand/contract migration kuralı.
-- **D-015 Worker üretimde ikiye bölündü:** `ut-worker-rt` ve `ut-worker-bg`.
+- **D-014 Tek seferlik `hy-migrate` servisi** ve expand/contract migration kuralı.
+- **D-015 Worker üretimde ikiye bölündü:** `hy-worker-rt` ve `hy-worker-bg`.
 - **D-016 Doğrudan APNs yolu yazılmaz.** Expo push, `interruptionLevel: "time-sensitive"`'ı destekliyor.
 - **D-017 Fontlar:** B612 Türkçe glif içermiyor. Arayüzde Overpass, veride IBM Plex Mono kullanılır.
 - **D-018 Sürüm sabitleri CLAUDE.md'dedir.**

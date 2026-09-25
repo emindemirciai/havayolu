@@ -1,5 +1,5 @@
-import { format, getMessages } from '@ucus/i18n'
-import { currentVersion, pickText, roadmapProgress, ROADMAP } from '@ucus/shared'
+import { format, getMessages } from '@havayolu/i18n'
+import { currentVersion, pickText, roadmapProgress, ROADMAP } from '@havayolu/shared'
 import type { Metadata } from 'next'
 import { connection } from 'next/server'
 import { fetchApiStatus } from '@/lib/api-status'

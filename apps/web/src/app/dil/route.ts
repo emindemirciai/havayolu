@@ -1,4 +1,4 @@
-import { resolveLocale } from '@ucus/i18n'
+import { resolveLocale } from '@havayolu/i18n'
 import type { NextRequest } from 'next/server'
 import { LOCALE_COOKIE } from '@/lib/locale'
 import { safeNextPath } from '@/lib/safe-path'

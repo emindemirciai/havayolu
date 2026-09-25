@@ -2,7 +2,7 @@ import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 import swagger from '@fastify/swagger'
-import { currentVersion } from '@ucus/shared'
+import { currentVersion } from '@havayolu/shared'
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify'
 import type { Redis } from 'ioredis'
 import { collectServices, type ServiceProbes } from './admin/services'
@@ -11,7 +11,7 @@ import type { SessionStore } from './auth/session-store'
 import type { Env } from './env'
 
 export interface VersionInfo {
-  app: 'ucus-takip'
+  app: 'havayolu'
   version: string
   gitSha: string
   buildTime: string | null
@@ -74,7 +74,7 @@ export async function buildApp(env: Env, deps: AppDeps): Promise<FastifyInstance
     max: 300,
     timeWindow: '1 minute',
     keyGenerator: (request) => clientIp(env, request),
-    ...(deps.rateLimitRedis ? { redis: deps.rateLimitRedis, nameSpace: 'ut:ratelimit:' } : {}),
+    ...(deps.rateLimitRedis ? { redis: deps.rateLimitRedis, nameSpace: 'hy:ratelimit:' } : {}),
     errorResponseBuilder: (_request, context) => ({
       statusCode: 429,
       message: `Çok fazla istek. ${Math.ceil(context.ttl / 1000)} sn sonra yeniden dene.`,
@@ -82,7 +82,7 @@ export async function buildApp(env: Env, deps: AppDeps): Promise<FastifyInstance
   })
   await app.register(swagger, {
     openapi: {
-      info: { title: 'ucus-takip API', version: currentVersion() },
+      info: { title: 'havayolu API', version: currentVersion() },
       tags: [
         { name: 'system', description: 'Sağlık ve sürüm' },
         { name: 'auth', description: 'Yönetici oturumu (platform-admin sözleşmesi)' },
@@ -92,7 +92,7 @@ export async function buildApp(env: Env, deps: AppDeps): Promise<FastifyInstance
   })
 
   const versionInfo: VersionInfo = {
-    app: 'ucus-takip',
+    app: 'havayolu',
     version: currentVersion(),
     gitSha: env.GIT_SHA,
     buildTime: env.BUILD_TIME ?? null,

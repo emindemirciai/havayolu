@@ -1,8 +1,8 @@
 // Üretim compose'u için kural denetimi (infra.md → Compose kuralları). Docker gerektirir.
 // - Hiçbir serviste `build:` yok (imajlar GHCR'dan çekilir).
-// - Uygulama imajları ghcr.io/emindemirciai/ucus-takip-* ve pull_policy: always.
+// - Uygulama imajları ghcr.io/emindemirciai/havayolu-* ve pull_policy: always.
 // - Her serviste bellek limiti ve log rotasyonu var; hiçbir servis host portu yayınlamıyor.
-// - Servis adları `ut-` önekli.
+// - Servis adları `hy-` önekli.
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
@@ -35,7 +35,7 @@ const config = JSON.parse(output) as { services: Record<string, ComposeService> 
 const problems: string[] = []
 
 for (const [name, service] of Object.entries(config.services)) {
-  if (!name.startsWith('ut-')) problems.push(`${name}: servis adı "ut-" önekiyle başlamalı`)
+  if (!name.startsWith('hy-')) problems.push(`${name}: servis adı "hy-" önekiyle başlamalı`)
   if (service.build) problems.push(`${name}: üretim compose'unda build: olamaz`)
   if (!service.mem_limit) problems.push(`${name}: mem_limit yok`)
   if (service.ports && service.ports.length > 0)
@@ -45,7 +45,7 @@ for (const [name, service] of Object.entries(config.services)) {
   const image = service.image ?? ''
   if (image.startsWith('ghcr.io/')) {
     if (image !== image.toLowerCase()) problems.push(`${name}: GHCR imaj adı küçük harfli olmalı`)
-    if (!/^ghcr\.io\/emindemirciai\/ucus-takip-(web|api|worker):/.test(image)) {
+    if (!/^ghcr\.io\/emindemirciai\/havayolu-(web|api|worker):/.test(image)) {
       problems.push(`${name}: beklenmeyen imaj ${image}`)
     }
     if (service.pull_policy !== 'always') problems.push(`${name}: pull_policy always olmalı`)

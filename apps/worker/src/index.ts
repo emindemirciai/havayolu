@@ -1,5 +1,5 @@
-import { createRedis, writeHeartbeat } from '@ucus/db'
-import { currentVersion } from '@ucus/shared'
+import { createRedis, writeHeartbeat } from '@havayolu/db'
+import { currentVersion } from '@havayolu/shared'
 import { pino } from 'pino'
 import { EnvError, loadDotEnvForDevelopment, parseEnv, type Env } from './env'
 import { startHealthServer, type HealthState } from './health'

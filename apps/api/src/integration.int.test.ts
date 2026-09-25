@@ -1,4 +1,11 @@
-import { createDb, createRedis, pingDb, pingRedis, readHeartbeats, writeHeartbeat } from '@ucus/db'
+import {
+  createDb,
+  createRedis,
+  pingDb,
+  pingRedis,
+  readHeartbeats,
+  writeHeartbeat,
+} from '@havayolu/db'
 import { afterAll, describe, expect, it } from 'vitest'
 import { buildApp } from './app'
 import { RedisSessionStore, SESSION_TTL_SECONDS } from './auth/session-store'
@@ -6,7 +13,7 @@ import { ADMIN_EMAIL, ADMIN_SETUP_TOKEN, fakeProbes, testEnv } from './test/help
 
 // Yerelde docker-compose.dev.yml (55432, 56379, 56380), CI'da servis konteynerleri.
 const DATABASE_URL =
-  process.env.TEST_DATABASE_URL ?? 'postgres://ucus:ucus_dev_only@localhost:55432/postgres'
+  process.env.TEST_DATABASE_URL ?? 'postgres://havayolu:havayolu_dev_only@localhost:55432/postgres'
 const REDIS_QUEUE_URL =
   process.env.TEST_REDIS_QUEUE_URL ?? 'redis://:queue_dev_only@localhost:56379/1'
 const REDIS_LIVE_URL = process.env.TEST_REDIS_LIVE_URL ?? 'redis://:live_dev_only@localhost:56380/1'
@@ -25,7 +32,7 @@ describe('gerçek bağımlılıklarla', () => {
     const store = new RedisSessionStore(redisQueue)
     const { token } = await store.create(ADMIN_EMAIL)
     expect(await store.get(token)).toMatchObject({ email: ADMIN_EMAIL, role: 'ADMIN' })
-    const keys = await redisQueue.keys('ut:admin_session:*')
+    const keys = await redisQueue.keys('hy:admin_session:*')
     expect(keys.some((k) => k.includes(token))).toBe(false)
     const ttl = await redisQueue.ttl(keys[0] ?? '')
     expect(ttl).toBeGreaterThan(SESSION_TTL_SECONDS - 10)

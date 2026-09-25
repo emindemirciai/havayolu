@@ -1,5 +1,5 @@
-import { formatDate, getMessages } from '@ucus/i18n'
-import { CHANGELOG, currentVersion, pickText } from '@ucus/shared'
+import { formatDate, getMessages } from '@havayolu/i18n'
+import { CHANGELOG, currentVersion, pickText } from '@havayolu/shared'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getLocale } from '@/lib/locale'

@@ -4,10 +4,10 @@ Bu dizindeki dosyalar Claude Code'a verilecek görev tanımlarıdır. Oturum ba�
 
 ## Başlamadan önce (bir kez, senin yapacakların)
 1. **Kurulum:** Git for Windows, Node 24 LTS, `npm i -g pnpm@12.6.0`, Docker Desktop (WSL 2 ile), GitHub CLI (`gh`), Claude Code.
-2. **Repo:** GitHub'da boş ve **özel** bir repo aç: github.com/new → ad `ucus-takip`, README, lisans ve .gitignore **eklemeden**. İlk push'u Claude yapar; bu, `main`'e yapılan tek doğrudan push'tur (D-024).
+2. **Repo:** `emindemirciai/havayolu` (özel) oluşturuldu. İlk push'u Claude yapar; bu, `main`'e yapılan tek doğrudan push'tur (D-024).
 3. **gh girişi:** `gh auth login` yap. Claude CI'yı izlemek ve PR'ları yönetmek için bunu kullanır.
 4. **Host ve e-posta:** Geçici host'u (mevcut domain'in alt alanı ya da sslip.io) ve `CONTACT_EMAIL` adresini belirle (bkz. `docs/ACTIVATION.md`).
-5. **Başlat:** Claude Code'u `C:\PROJELER\ucus-takip` klasöründe aç ve `@docs/prompts/parca-1.md dosyasındaki Parça 1'e başla` yaz.
+5. **Başlat:** Claude Code'u `C:\PROJELER\havayolu` klasöründe aç ve `@docs/prompts/parca-1.md dosyasındaki Parça 1'e başla` yaz.
 
 ## Sıra
 | # | Dosya | Çıktı |

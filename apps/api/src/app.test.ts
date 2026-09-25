@@ -1,4 +1,4 @@
-import { CHANGELOG } from '@ucus/shared'
+import { CHANGELOG } from '@havayolu/shared'
 import { afterAll, describe, expect, it } from 'vitest'
 import { allowedOrigins } from './app'
 import { EnvError, parseEnv } from './env'
@@ -18,7 +18,7 @@ describe('sistem uç noktaları', () => {
     const res = await app.inject({ method: 'GET', url: '/version' })
     expect(res.statusCode).toBe(200)
     expect(res.json()).toMatchObject({
-      app: 'ucus-takip',
+      app: 'havayolu',
       version: CHANGELOG[0]?.version,
       gitSha: 'abc1234',
       env: 'test',
@@ -104,10 +104,8 @@ describe('env', () => {
 
   it("CORS yalnızca web ve admin host'larına izin verir", () => {
     expect(
-      allowedOrigins(
-        testEnv({ WEB_HOST: 'ucus.example.com', ADMIN_HOST: 'ucus-admin.example.com' }),
-      ),
-    ).toEqual(['https://ucus.example.com', 'https://ucus-admin.example.com'])
+      allowedOrigins(testEnv({ WEB_HOST: 'havayolu.live', ADMIN_HOST: 'admin.havayolu.live' })),
+    ).toEqual(['https://havayolu.live', 'https://admin.havayolu.live'])
     expect(allowedOrigins(testEnv({ WEB_HOST: 'localhost:3100' }))).toEqual([
       'http://localhost:3100',
     ])

@@ -28,3 +28,18 @@ export function adminRouting(
   }
   return isAdminPath(pathname) ? { action: 'not_found' } : { action: 'next' }
 }
+
+/**
+ * Kanonik alan adı: `www.<WEB_HOST>` istekleri kalıcı yönlendirmeyle (308) `https://<WEB_HOST>`
+ * adresine gider; yol ve sorgu korunur. WEB_HOST tanımlı değilse (yerel) hiçbir şey yapılmaz.
+ */
+export function canonicalHostRedirect(
+  webHost: string | undefined,
+  requestHost: string | null,
+  pathAndQuery: string,
+): string | null {
+  const canonical = webHost?.trim().toLowerCase()
+  const host = (requestHost ?? '').trim().toLowerCase()
+  if (!canonical || host !== `www.${canonical}`) return null
+  return `https://${canonical}${pathAndQuery.startsWith('/') ? pathAndQuery : `/${pathAndQuery}`}`
+}

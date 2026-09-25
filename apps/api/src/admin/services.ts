@@ -1,5 +1,5 @@
-import type { Heartbeat } from '@ucus/db'
-import { overallState, type ServicesReport, type ServiceStatus } from '@ucus/shared'
+import type { Heartbeat } from '@havayolu/db'
+import { overallState, type ServicesReport, type ServiceStatus } from '@havayolu/shared'
 
 /** Her yoklama bu süreyi aşarsa servis "down" sayılır; panel asla takılmaz. */
 export const PROBE_TIMEOUT_MS = 2_000

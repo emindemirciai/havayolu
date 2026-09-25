@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# ucus-takip API imajı. Derleme bağlamı: repo kökü (docker build -f apps/api/Dockerfile .).
+# havayolu API imajı. Derleme bağlamı: repo kökü (docker build -f apps/api/Dockerfile .).
 FROM node:24-slim AS base
 ENV CI=true
 RUN npm install -g pnpm@12.6.0 turbo@2.11.3 && npm cache clean --force
@@ -7,7 +7,7 @@ RUN npm install -g pnpm@12.6.0 turbo@2.11.3 && npm cache clean --force
 FROM base AS pruner
 WORKDIR /repo
 COPY . .
-RUN turbo prune @ucus/api --docker
+RUN turbo prune @havayolu/api --docker
 
 FROM base AS builder
 WORKDIR /repo
@@ -16,7 +16,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile --store-dir /pnpm/store
 COPY --from=pruner /repo/out/full/ .
 COPY tsconfig.base.json ./
-RUN turbo run build --filter=@ucus/api
+RUN turbo run build --filter=@havayolu/api
 
 FROM node:24-slim AS runner
 ARG GIT_SHA=dev

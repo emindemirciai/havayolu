@@ -1,6 +1,6 @@
 {
-  "name": "ucus-takip",
-  "version": "0.3.0",
+  "name": "havayolu",
+  "version": "0.3.1",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -9,7 +9,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "turbo run dev --filter=@ucus/web --filter=@ucus/api --filter=@ucus/worker",
+    "dev": "turbo run dev --filter=@havayolu/web --filter=@havayolu/api --filter=@havayolu/worker",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

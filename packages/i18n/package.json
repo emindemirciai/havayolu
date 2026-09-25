@@ -1,5 +1,5 @@
 {
-  "name": "@ucus/i18n",
+  "name": "@havayolu/i18n",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
@@ -13,7 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ucus/shared": "workspace:*"
+    "@havayolu/shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "6.0.3",

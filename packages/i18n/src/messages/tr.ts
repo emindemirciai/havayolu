@@ -42,7 +42,6 @@ export const tr = {
   footer: {
     dataAttributionPrefix: 'Canlı uçuş verisi:',
     license: 'lisansıyla',
-    codeName: 'Kod adı',
   },
   admin: {
     title: 'Yönetim',

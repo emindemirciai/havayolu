@@ -236,10 +236,10 @@ importers:
       '@fastify/swagger':
         specifier: 9.9.0
         version: 9.9.0
-      '@ucus/db':
+      '@havayolu/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@ucus/shared':
+      '@havayolu/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       fastify:
@@ -276,10 +276,10 @@ importers:
       '@fontsource/overpass':
         specifier: 5.3.0
         version: 5.3.0
-      '@ucus/i18n':
+      '@havayolu/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@ucus/shared':
+      '@havayolu/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       next:
@@ -325,10 +325,10 @@ importers:
 
   apps/worker:
     dependencies:
-      '@ucus/db':
+      '@havayolu/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@ucus/shared':
+      '@havayolu/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       ioredis:
@@ -399,7 +399,7 @@ importers:
 
   packages/i18n:
     dependencies:
-      '@ucus/shared':
+      '@havayolu/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:

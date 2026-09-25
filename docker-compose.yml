@@ -1,7 +1,7 @@
-# ucus-takip — üretim compose'u (Dokploy). Kurallar: docs/spec/infra.md
+# havayolu — üretim compose'u (Dokploy). Kurallar: docs/spec/infra.md
 # - Hiçbir serviste `build:` yoktur; imajlar GitHub Actions'ta derlenir ve GHCR'dan çekilir.
 # - Traefik etiketi yazılmaz, dokploy-network tanımlanmaz: domain'ler Dokploy arayüzünden eklenir
-#   (ut-web → WEB_HOST ve ADMIN_HOST port 3000, ut-api → API_HOST port 4000).
+#   (hy-web → WEB_HOST ve ADMIN_HOST port 3000, hy-api → API_HOST port 4000).
 # - Postgres ve Redis dışarıya port açmaz. Değişkenler Dokploy'un yazdığı .env dosyasından gelir.
 
 x-logging: &logging
@@ -21,12 +21,12 @@ x-app: &app
       required: false
 
 x-db-urls: &db-urls
-  DATABASE_URL: postgres://${POSTGRES_USER:-ucus}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD gerekli}@ut-postgres:5432/${POSTGRES_DB:-ucus}
-  REDIS_QUEUE_URL: redis://:${REDIS_QUEUE_PASSWORD:?REDIS_QUEUE_PASSWORD gerekli}@ut-redis-queue:6379/0
-  REDIS_LIVE_URL: redis://:${REDIS_LIVE_PASSWORD:?REDIS_LIVE_PASSWORD gerekli}@ut-redis-live:6379/0
+  DATABASE_URL: postgres://${POSTGRES_USER:-havayolu}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD gerekli}@hy-postgres:5432/${POSTGRES_DB:-havayolu}
+  REDIS_QUEUE_URL: redis://:${REDIS_QUEUE_PASSWORD:?REDIS_QUEUE_PASSWORD gerekli}@hy-redis-queue:6379/0
+  REDIS_LIVE_URL: redis://:${REDIS_LIVE_PASSWORD:?REDIS_LIVE_PASSWORD gerekli}@hy-redis-live:6379/0
 
 services:
-  ut-postgres:
+  hy-postgres:
     image: postgis/postgis:18-3.6
     restart: unless-stopped
     stop_grace_period: 60s
@@ -34,9 +34,9 @@ services:
     mem_limit: ${MEM_LIMIT_POSTGRES:-768m}
     logging: *logging
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-ucus}
+      POSTGRES_USER: ${POSTGRES_USER:-havayolu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD gerekli}
-      POSTGRES_DB: ${POSTGRES_DB:-ucus}
+      POSTGRES_DB: ${POSTGRES_DB:-havayolu}
     command:
       - postgres
       - -c
@@ -57,7 +57,7 @@ services:
       - max_wal_size=1GB
     # PG 18+ imajında PGDATA /var/lib/postgresql/18/docker'dır; volume üst dizine bağlanır.
     volumes:
-      - ut_pgdata:/var/lib/postgresql
+      - hy_pgdata:/var/lib/postgresql
     expose:
       - '5432'
     healthcheck:
@@ -67,7 +67,7 @@ services:
       retries: 10
       start_period: 20s
 
-  ut-redis-queue:
+  hy-redis-queue:
     image: redis:8.10.2-alpine
     restart: unless-stopped
     mem_limit: ${MEM_LIMIT_REDIS_QUEUE:-256m}
@@ -87,7 +87,7 @@ services:
       - --appendfsync
       - everysec
     volumes:
-      - ut_redisqueue:/data
+      - hy_redisqueue:/data
     expose:
       - '6379'
     healthcheck:
@@ -96,7 +96,7 @@ services:
       timeout: 3s
       retries: 10
 
-  ut-redis-live:
+  hy-redis-live:
     image: redis:8.10.2-alpine
     restart: unless-stopped
     mem_limit: ${MEM_LIMIT_REDIS_LIVE:-256m}
@@ -124,9 +124,9 @@ services:
       retries: 10
 
   # Tek seferlik: migration'ları advisory lock altında uygular ve çıkar. Hata = deploy durur.
-  ut-migrate:
+  hy-migrate:
     <<: *app
-    image: ghcr.io/emindemirciai/ucus-takip-worker:${IMAGE_TAG:-main}
+    image: ghcr.io/emindemirciai/havayolu-worker:${IMAGE_TAG:-main}
     restart: 'no'
     mem_limit: 256m
     command: ['node', 'packages/db/dist/migrate.js']
@@ -135,46 +135,46 @@ services:
     healthcheck:
       disable: true
     depends_on:
-      ut-postgres:
+      hy-postgres:
         condition: service_healthy
 
-  ut-api:
+  hy-api:
     <<: *app
-    image: ghcr.io/emindemirciai/ucus-takip-api:${IMAGE_TAG:-main}
+    image: ghcr.io/emindemirciai/havayolu-api:${IMAGE_TAG:-main}
     mem_limit: ${MEM_LIMIT_API:-384m}
     environment:
       <<: *db-urls
       APP_ENV: production
       API_PORT: '4000'
-      WEB_INTERNAL_URL: http://ut-web:3000
+      WEB_INTERNAL_URL: http://hy-web:3000
       NODE_OPTIONS: --max-old-space-size=270
     expose:
       - '4000'
     depends_on:
-      ut-migrate:
+      hy-migrate:
         condition: service_completed_successfully
-      ut-redis-queue:
+      hy-redis-queue:
         condition: service_healthy
-      ut-redis-live:
+      hy-redis-live:
         condition: service_healthy
 
-  ut-web:
+  hy-web:
     <<: *app
-    image: ghcr.io/emindemirciai/ucus-takip-web:${IMAGE_TAG:-main}
+    image: ghcr.io/emindemirciai/havayolu-web:${IMAGE_TAG:-main}
     mem_limit: ${MEM_LIMIT_WEB:-320m}
     environment:
       APP_ENV: production
-      API_INTERNAL_URL: http://ut-api:4000
+      API_INTERNAL_URL: http://hy-api:4000
       NODE_OPTIONS: --max-old-space-size=224
     expose:
       - '3000'
     depends_on:
-      ut-migrate:
+      hy-migrate:
         condition: service_completed_successfully
 
-  ut-worker-rt:
+  hy-worker-rt:
     <<: *app
-    image: ghcr.io/emindemirciai/ucus-takip-worker:${IMAGE_TAG:-main}
+    image: ghcr.io/emindemirciai/havayolu-worker:${IMAGE_TAG:-main}
     mem_limit: ${MEM_LIMIT_WORKER_RT:-384m}
     environment:
       <<: *db-urls
@@ -185,16 +185,16 @@ services:
     expose:
       - '4200'
     depends_on:
-      ut-migrate:
+      hy-migrate:
         condition: service_completed_successfully
-      ut-redis-queue:
+      hy-redis-queue:
         condition: service_healthy
-      ut-redis-live:
+      hy-redis-live:
         condition: service_healthy
 
-  ut-worker-bg:
+  hy-worker-bg:
     <<: *app
-    image: ghcr.io/emindemirciai/ucus-takip-worker:${IMAGE_TAG:-main}
+    image: ghcr.io/emindemirciai/havayolu-worker:${IMAGE_TAG:-main}
     mem_limit: ${MEM_LIMIT_WORKER_BG:-256m}
     environment:
       <<: *db-urls
@@ -205,11 +205,11 @@ services:
     expose:
       - '4200'
     depends_on:
-      ut-migrate:
+      hy-migrate:
         condition: service_completed_successfully
-      ut-redis-queue:
+      hy-redis-queue:
         condition: service_healthy
 
 volumes:
-  ut_pgdata:
-  ut_redisqueue:
+  hy_pgdata:
+  hy_redisqueue:

@@ -1,9 +1,9 @@
 import 'server-only'
-import type { ServicesReport } from '@ucus/shared'
+import type { ServicesReport } from '@havayolu/shared'
 import { getServerEnv } from './env'
 
 /** Yönetici oturum token'ının tutulduğu çerez (httpOnly; yalnızca /admin altında gönderilir). */
-export const ADMIN_COOKIE = 'ut_admin'
+export const ADMIN_COOKIE = 'hy_admin'
 export const ADMIN_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 
 export type LoginFailure = 'invalid' | 'rate_limited' | 'disabled' | 'unavailable'

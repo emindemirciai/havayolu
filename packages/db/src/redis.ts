@@ -17,7 +17,7 @@ export interface RedisClientOptions {
 export function createRedis(url: string, { name, maxRetriesPerRequest = 2 }: RedisClientOptions) {
   const options: RedisOptions = {
     protocol: 2,
-    connectionName: `ucus-takip:${name}`,
+    connectionName: `havayolu:${name}`,
     maxRetriesPerRequest,
     connectTimeout: 5_000,
     lazyConnect: false,
@@ -48,7 +48,7 @@ export async function pingRedis(redis: Redis): Promise<number> {
   return Math.round(performance.now() - started)
 }
 
-export const HEARTBEAT_PREFIX = 'ut:heartbeat:'
+export const HEARTBEAT_PREFIX = 'hy:heartbeat:'
 export const HEARTBEAT_TTL_SECONDS = 60
 
 export interface Heartbeat {

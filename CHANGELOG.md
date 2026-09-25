@@ -8,6 +8,22 @@
 
 ---
 
+## v0.3.1 — 2026-09-25
+
+### Türkçe
+**Yeni adımız havayolu, adresimiz havayolu.live**
+
+- Uygulamanın adı havayolu oldu. Web sitesi havayolu.live, yönetim paneli admin.havayolu.live, sunucu api.havayolu.live, analiz paneli analiz.havayolu.live adresinde yayına alınacak.
+- www.havayolu.live adresine gelen ziyaretçiler otomatik olarak havayolu.live adresine yönlendirilir.
+
+### English
+**Our new name is havayolu, at havayolu.live**
+
+- The app is now called havayolu. The website will go live at havayolu.live, the admin panel at admin.havayolu.live, the server at api.havayolu.live and the analytics panel at analiz.havayolu.live.
+- Visitors to www.havayolu.live are redirected to havayolu.live automatically.
+
+---
+
 ## v0.3.0 — 2026-09-25
 
 ### Türkçe

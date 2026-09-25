@@ -1,6 +1,6 @@
 'use client'
 
-import type { Locale } from '@ucus/shared'
+import type { Locale } from '@havayolu/shared'
 import { usePathname } from 'next/navigation'
 
 /** Dil tercihini çerezle kaydeden /dil uç noktasına gider ve aynı sayfaya geri döner. */

@@ -1,4 +1,4 @@
-// ut-migrate servisinin giriş noktası: `node packages/db/dist/migrate.js`.
+// hy-migrate servisinin giriş noktası: `node packages/db/dist/migrate.js`.
 // DATABASE_URL zorunludur. Migration klasörü paketin `drizzle/` dizinidir.
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

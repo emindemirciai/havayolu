@@ -5,8 +5,8 @@ import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import './globals.css'
 
-import { getMessages } from '@ucus/i18n'
-import { currentVersion } from '@ucus/shared'
+import { getMessages } from '@havayolu/i18n'
+import { currentVersion } from '@havayolu/shared'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
@@ -50,9 +50,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <main className="site-main">{children}</main>
         <footer className="site-footer">
           <span className="mono">v{currentVersion()}</span>
-          <span>
-            {t.footer.codeName}: <span className="mono">ucus-takip</span>
-          </span>
+          <span>{appName(env)}</span>
           {analytics ? <ConsentSettingsButton label={t.consent.settings} /> : null}
         </footer>
         {analytics ? (

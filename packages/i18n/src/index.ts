@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, isLocale, type Locale } from '@ucus/shared'
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@havayolu/shared'
 import { en } from './messages/en'
 import { tr, type Messages } from './messages/tr'
 

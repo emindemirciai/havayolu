@@ -1,4 +1,4 @@
-import { getMessages } from '@ucus/i18n'
+import { getMessages } from '@havayolu/i18n'
 import Link from 'next/link'
 import { getLocale } from '@/lib/locale'
 

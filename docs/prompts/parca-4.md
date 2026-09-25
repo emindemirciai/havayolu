@@ -123,7 +123,7 @@ Uygulama geçici **tasarım** token'larıyla başlar ve 4B'de DESIGN.md'ye geçe
   - Üretim VPS'inde yük testi yalnızca kullanıcı onayıyla yapılır (DUR-SOR).
 - **Opsiyonel yükseltme** (DUR-SOR + DECISIONS; önce infra.md güncellenir): web ve api Dokploy "Application" olarak (GHCR imaj kaynağı), Swarm health check ve `start-first` güncellemesiyle sıfır kesintili çalışır.
   - postgres, redis ve worker Compose'da kalır.
-  - Application'lar compose'un `default` ağına erişemez. Bu yüzden Dokploy ≥ v0.30.0 ağ yönetimiyle projeye özel harici bir ağ (`ut-internal`) oluşturulur; DB ve Redis paylaşılan `dokploy-network`'e asla bağlanmaz.
+  - Application'lar compose'un `default` ağına erişemez. Bu yüzden Dokploy ≥ v0.30.0 ağ yönetimiyle projeye özel harici bir ağ (`hy-internal`) oluşturulur; DB ve Redis paylaşılan `dokploy-network`'e asla bağlanmaz.
   - Bu, deploy sözleşmesini (`application.deploy`) değiştirir.
 - **`docs/RUNBOOK.md` tamamlanır** — adım adım prosedürler:
   - sağlayıcı kesintisi ve 429 fırtınası (Parça 1'de başladı)

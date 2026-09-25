@@ -1,6 +1,6 @@
 import 'server-only'
-import { resolveLocale } from '@ucus/i18n'
-import type { Locale } from '@ucus/shared'
+import { resolveLocale } from '@havayolu/i18n'
+import type { Locale } from '@havayolu/shared'
 import { cookies } from 'next/headers'
 
 export const LOCALE_COOKIE = 'lang'

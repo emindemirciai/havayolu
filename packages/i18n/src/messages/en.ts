@@ -43,7 +43,6 @@ export const en: Messages = {
   footer: {
     dataAttributionPrefix: 'Live flight data:',
     license: 'licensed under',
-    codeName: 'Code name',
   },
   admin: {
     title: 'Administration',
