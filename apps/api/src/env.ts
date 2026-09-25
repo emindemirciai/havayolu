@@ -1,28 +1,29 @@
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { withoutEnvPlaceholders } from '@havayolu/shared'
 import { z } from 'zod'
+import { isCidr } from './net/client-ip'
 
 const emptyToUndefined = (value: unknown) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value
 const optionalString = z.preprocess(emptyToUndefined, z.string().trim().optional())
 const optionalUrl = z.preprocess(emptyToUndefined, z.url().optional())
-const csv = z.preprocess(
-  (value) =>
-    typeof value === 'string'
-      ? value
-          .split(',')
-          .map((part) => part.trim())
-          .filter(Boolean)
-      : [],
-  z.array(z.string()),
-)
+const splitCsv = (value: unknown) =>
+  typeof value === 'string'
+    ? value
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean)
+    : []
+const csv = z.preprocess(splitCsv, z.array(z.string()))
 
 const EnvSchema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_LISTEN_HOST: z.string().min(1).default('0.0.0.0'),
   API_PORT: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(65535).optional()),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  GIT_SHA: z.string().min(1).default('dev'),
+  // İmaja build sırasında gömülür ve Dokploy'a girilmez; boş gelirse açılışı engellemez, 'dev' olur.
+  GIT_SHA: z.preprocess(emptyToUndefined, z.string().min(1).default('dev')),
   BUILD_TIME: optionalString,
 
   DATABASE_URL: optionalUrl,
@@ -32,7 +33,7 @@ const EnvSchema = z.object({
   WEB_HOST: optionalString,
   ADMIN_HOST: optionalString,
   WEB_INTERNAL_URL: z.preprocess(emptyToUndefined, z.url().default('http://localhost:3100')),
-  ANALYTICS_URL: optionalUrl,
+  ANALYZE_URL: optionalUrl,
   EXPECTED_WORKERS: z.preprocess(
     (value) => (value === undefined || value === '' ? 'worker-rt,worker-bg' : value),
     csv,
@@ -44,7 +45,10 @@ const EnvSchema = z.object({
     z.string().min(32, 'ADMIN_SETUP_TOKEN en az 32 karakter olmalı').optional(),
   ),
 
-  TRUSTED_PROXY_CIDRS: csv,
+  TRUSTED_PROXY_CIDRS: z.preprocess(
+    splitCsv,
+    z.array(z.string().refine(isCidr, 'geçerli bir IP ya da CIDR olmalı (ör. 10.0.0.0/8)')),
+  ),
   EDGE_PROXY: z.preprocess(emptyToUndefined, z.enum(['cloudflare']).optional()),
 })
 
@@ -63,8 +67,25 @@ export class EnvError extends Error {
   }
 }
 
+/** Compose'un parolalardan kurduğu bağlantı adresleri ve parolanın geldiği değişken. */
+const PASSWORD_URLS = {
+  DATABASE_URL: 'POSTGRES_PASSWORD',
+  REDIS_QUEUE_URL: 'REDIS_QUEUE_PASSWORD',
+  REDIS_LIVE_URL: 'REDIS_LIVE_PASSWORD',
+} as const
+
 export function parseEnv(source: NodeJS.ProcessEnv): Env {
-  const result = EnvSchema.safeParse(source)
+  // Şablondaki "#parola üret#" gibi bir talimat doldurulmadan kalırsa compose onu parola olarak
+  // adrese yazar. Üretilen sırlar yalnızca [A-Za-z0-9_-] içerdiği için adreste "#" olamaz (D-063).
+  const unfilled = Object.entries(PASSWORD_URLS)
+    .filter(([key]) => source[key]?.includes('#'))
+    .map(
+      ([key, secret]) =>
+        `${key}: ${secret} doldurulmamış (#…# talimatı duruyor); parolayı üret ve gir`,
+    )
+  if (unfilled.length > 0) throw new EnvError(unfilled)
+
+  const result = EnvSchema.safeParse(withoutEnvPlaceholders(source))
   if (!result.success) {
     throw new EnvError(
       result.error.issues.map((i) => `${i.path.join('.') || '(kök)'}: ${i.message}`),
@@ -75,6 +96,11 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
   if (data.APP_ENV === 'production') {
     for (const key of ['DATABASE_URL', 'REDIS_QUEUE_URL', 'REDIS_LIVE_URL'] as const) {
       if (!data[key]) issues.push(`${key}: üretimde zorunlu`)
+    }
+    if (data.TRUSTED_PROXY_CIDRS.length === 0) {
+      issues.push(
+        'TRUSTED_PROXY_CIDRS: üretimde zorunlu (Docker özel ağları; ör. 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16)',
+      )
     }
   }
   if (Boolean(data.ADMIN_EMAIL) !== Boolean(data.ADMIN_SETUP_TOKEN)) {

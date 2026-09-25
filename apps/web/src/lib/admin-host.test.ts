@@ -19,6 +19,12 @@ describe('adminRouting', () => {
     expect(adminRouting(host, host, '/_next/data/x.json')).toEqual({ action: 'next' })
   })
 
+  it("admin host'unda dil değiştirme (/dil) çalışır, benzer yollar yönlenir", () => {
+    const host = 'admin.havayolu.live'
+    expect(adminRouting(host, host, '/dil')).toEqual({ action: 'next' })
+    expect(adminRouting(host, host, '/dilek')).toEqual({ action: 'redirect', location: '/admin' })
+  })
+
   it("başka host'tan /admin 404 alır, diğer sayfalar geçer", () => {
     const host = 'admin.havayolu.live'
     expect(adminRouting(host, 'havayolu.live', '/admin')).toEqual({ action: 'not_found' })

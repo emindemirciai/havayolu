@@ -7,6 +7,8 @@ import { parseRoles, RoleError, type WorkerRole } from './roles'
 
 /** Heartbeat aralığı; kayıt 60 sn TTL ile yazılır (packages/db → HEARTBEAT_TTL_SECONDS). */
 const HEARTBEAT_INTERVAL_MS = 15_000
+/** Kapanışta Redis'in QUIT yanıtı için beklenen en uzun süre; sonra bağlantı kesilir. */
+const REDIS_QUIT_TIMEOUT_MS = 3_000
 
 loadDotEnvForDevelopment()
 
@@ -26,8 +28,10 @@ try {
 const log = pino({ level: env.LOG_LEVEL, base: { service: env.WORKER_SERVICE_NAME } })
 const version = currentVersion()
 const startedAt = new Date().toISOString()
+// Heartbeat bağlantısı BullMQ işleyicisi değildir: komutlar Redis kesintisinde sonsuza dek
+// kuyrukta beklemesin diye sonlu yeniden deneme (varsayılan 2) kullanılır.
 const redis = env.REDIS_QUEUE_URL
-  ? createRedis(env.REDIS_QUEUE_URL, { name: env.WORKER_SERVICE_NAME, maxRetriesPerRequest: null })
+  ? createRedis(env.REDIS_QUEUE_URL, { name: env.WORKER_SERVICE_NAME })
   : null
 
 const state: HealthState = {
@@ -56,24 +60,37 @@ async function beat() {
   }
 }
 
+/** QUIT'i sınırlı süre bekler; Redis yanıt vermiyorsa bağlantıyı doğrudan keser. */
+async function closeRedis(): Promise<void> {
+  if (!redis) return
+  const timeout = new Promise<'timeout'>((resolve) => {
+    setTimeout(() => resolve('timeout'), REDIS_QUIT_TIMEOUT_MS).unref()
+  })
+  const outcome = await Promise.race([
+    redis.quit().then(
+      () => 'closed' as const,
+      () => 'failed' as const,
+    ),
+    timeout,
+  ])
+  if (outcome !== 'closed') redis.disconnect()
+}
+
+// Sağlık ucu ve sinyal işleyicileri ilk heartbeat'ten önce açılır: Redis erişilemezse süreç sessizce
+// takılmaz, /health 503 döner ve kapanış sinyali yine işlenir.
+const health = startHealthServer(env.WORKER_HEALTH_PORT, () => state)
 if (!redis)
   log.warn('REDIS_QUEUE_URL tanımlı değil: heartbeat yazılmayacak (yalnızca yerel geliştirme)')
-await beat()
+void beat()
 const timer = setInterval(() => void beat(), HEARTBEAT_INTERVAL_MS)
-const health = startHealthServer(env.WORKER_HEALTH_PORT, () => state)
-log.info({ roles, version, healthPort: env.WORKER_HEALTH_PORT }, 'worker başladı')
 
 const shutdown = async (signal: string) => {
   log.info({ signal }, 'kapanıyor')
   clearInterval(timer)
   health.close()
-  try {
-    await redis?.quit()
-    process.exit(0)
-  } catch (error) {
-    log.error({ err: error }, 'kapanış sırasında hata')
-    process.exit(1)
-  }
+  await closeRedis()
+  process.exit(0)
 }
 process.once('SIGTERM', () => void shutdown('SIGTERM'))
 process.once('SIGINT', () => void shutdown('SIGINT'))
+log.info({ roles, version, healthPort: env.WORKER_HEALTH_PORT }, 'worker başladı')

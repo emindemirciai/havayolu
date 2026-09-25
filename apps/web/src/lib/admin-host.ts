@@ -1,7 +1,8 @@
 /**
  * Admin alan adı yönlendirme kararı (proxy.ts kullanır; saf fonksiyon, test edilebilir).
  * - ADMIN_HOST tanımlı değilse (yerel geliştirme) hiçbir şey yapılmaz; /admin aynı host'ta açılır.
- * - ADMIN_HOST'tan gelen /admin dışı sayfa istekleri /admin'e yönlenir (API ve Next varlıkları hariç).
+ * - ADMIN_HOST'tan gelen /admin dışı sayfa istekleri /admin'e yönlenir (API, Next varlıkları ve
+ *   dil değiştirme yolu /dil hariç).
  * - Başka host'tan /admin istekleri 404 alır: yönetim yalnızca kendi alan adında açılır.
  */
 export type AdminRouting =
@@ -21,7 +22,12 @@ export function adminRouting(
   const host = (requestHost ?? '').trim().toLowerCase()
   const onAdminHost = host === configured
   if (onAdminHost) {
-    if (isAdminPath(pathname) || pathname.startsWith('/api/') || pathname.startsWith('/_next/')) {
+    if (
+      isAdminPath(pathname) ||
+      pathname === '/dil' ||
+      pathname.startsWith('/api/') ||
+      pathname.startsWith('/_next/')
+    ) {
       return { action: 'next' }
     }
     return { action: 'redirect', location: '/admin' }

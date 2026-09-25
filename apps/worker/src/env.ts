@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { withoutEnvPlaceholders } from '@havayolu/shared'
 import { z } from 'zod'
 
 const emptyToUndefined = (value: unknown) =>
@@ -8,7 +9,8 @@ const emptyToUndefined = (value: unknown) =>
 const EnvSchema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  GIT_SHA: z.string().min(1).default('dev'),
+  // İmaja build sırasında gömülür ve Dokploy'a girilmez; boş gelirse açılışı engellemez, 'dev' olur.
+  GIT_SHA: z.preprocess(emptyToUndefined, z.string().min(1).default('dev')),
   WORKER_ROLE: z.preprocess(emptyToUndefined, z.string().default('all')),
   /** Admin panelinde görünen servis adı; üretimde worker-rt ya da worker-bg. */
   WORKER_SERVICE_NAME: z.preprocess(
@@ -38,7 +40,8 @@ export class EnvError extends Error {
 }
 
 export function parseEnv(source: NodeJS.ProcessEnv): Env {
-  const result = EnvSchema.safeParse(source)
+  // Şablondaki "#…#" talimatları tanımsız sayılır (D-063).
+  const result = EnvSchema.safeParse(withoutEnvPlaceholders(source))
   if (!result.success) {
     throw new EnvError(
       result.error.issues.map((i) => `${i.path.join('.') || '(kök)'}: ${i.message}`),

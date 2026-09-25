@@ -9,6 +9,11 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "env": ["APP_ENV", "GIT_SHA", "BUILD_TIME"]
     },
+    "@havayolu/web#build": {
+      "dependsOn": ["^build", "@havayolu/web#typecheck"],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": ["APP_ENV", "GIT_SHA", "BUILD_TIME"]
+    },
     "lint": {
       "outputs": []
     },

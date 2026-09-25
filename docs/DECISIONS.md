@@ -2,8 +2,27 @@
 
 Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en üsttedir.
 
+## 2026-09-25 — Birleştirme öncesi inceleme ve repo koruması (v0.3.2)
+- **D-063 Dokploy şablonunda boş alanlar `ANAHTAR=#talimat#` biçimindedir (kullanıcı talebi).** Docker Compose bu metni yorum değil değer olarak okur; `ANAHTAR= #talimat#` de aynıdır (Docker 29 ile ölçüldü). Yalnızca bir değerden sonra gelen `#` yorumdur. Bu yüzden:
+  - api, worker ve web `#…#` biçimindeki değeri tanımsız sayar (`packages/shared` → `withoutEnvPlaceholders`). "Boş bırak" satırları olduğu gibi kalabilir.
+  - Parolalar compose'da bağlantı adreslerine gömülür. Adreste `#` kalırsa (üretilen sırlarda `#` olmaz) API açılmayı reddeder ve hangi parolanın doldurulmadığını yazar.
+  - `compose:guard`, sır satırlarında `#…#` dışında değer bulunmadığını ve talimatların `$` içermediğini denetler.
+  - Bilinen sınır: Postgres parolası ilk açılışta volume'a yazılır; ilk deploy'dan önce girilmezse volume yeniden oluşturulmalıdır (veri yokken).
+- **D-062 Analiz env adları `ANALYZE_` önekiyle yazılır (kullanıcı kararı).** Kullanıcının diğer projelerinde `ANALYTICS_` adları hataya yol açtı; Siteni Analiz Et uygulamasının kendi değişkenleri de `ANALYZE_` önekli. Web ve API `ANALYZE_URL` ile `ANALYZE_SITE_ID`'yi okur (değer, analiz uygulamasının `ANALYZE_SITE_ID`'siyle aynıdır); belgelerdeki host adı `ANALYZE_HOST`'tur. Henüz yayın olmadığı için eski adlar için geçiş desteği tutulmaz.
+- **D-060 İstemci IP'si, hız sınırı ve üretim env sözleşmesi.** Çok ajanlı inceleme (4 açı + çürütmeye çalışan doğrulayıcılar) şunu gösterdi: web API'yi iç ağdan çağırdığı için bütün ziyaretçiler tek bir hız sayacına düşüyordu. Dakikada 5 yanlış giriş yöneticiyi kilitliyordu, ~150 `/durum` açılışı API'yi 429'a sokuyordu.
+  - Web, ziyaretçinin `X-Forwarded-For` ve `CF-Connecting-IP` başlıklarını iletir. API yalnızca `TRUSTED_PROXY_CIDRS`'teki adreslerden gelen zincire güvenir; üretimde bu değişken zorunludur, compose boşsa Docker'ın özel ağlarını verir. Ön koşul: uygulama konteynerleri dışarıya port açmaz. Kabul edilen sınır: Dokploy alan adı olan her servisi paylaşılan `dokploy-network`'e bağlar; VPS'teki diğer projelerin konteynerleri de bu özel ağlardadır ve kendi hız sınırı anahtarlarını seçebilir. Traefik aynı alt ağda olduğu için IP ile ayırt edilemez; diğer projeler aynı sahibindir.
+  - `CF-Connecting-IP` yalnızca isteği ileten adres Cloudflare'in yayımlanmış ağlarındaysa kullanılır (liste koda gömülü, kaynak cloudflare.com/ips). Alternatif (yalnızca `X-Forwarded-For`) Traefik'in Cloudflare'e güvenmesini gerektirirdi; Dokploy ayarına bağımlı olmamak için seçilmedi.
+  - `/health`, `/version`, `/openapi.json` hız sınırı dışında; `/ready` veritabanına dokunduğu için sınır içinde. Sayaç deposu hatasında istek geçer (`skipOnError`); aksi hâlde redis-queue kesintisi API'yi sağlıksız sayıp trafikten düşürüyordu.
+  - `.env.example` Dokploy'a olduğu gibi kopyalanmaz (D-027'nin "hepsini gir" kısmını değiştirir): geliştirme parolaları, localhost host'ları ve `EXTERNAL_PROVIDERS_DISABLED=true` üretime taşınırdı. `GIT_SHA` dosyadan çıkarıldı (env_file imajdaki değeri eziyordu, boşsa servisler çöküyordu); üç şema da boş değeri tolere eder. `EXPECTED_WORKERS` üretimde compose'da sabittir. Üretim env bloğu `deploy/dokploy.env.example`'dadır (analiz uygulaması: `deploy/analiz.env.example`). `pnpm compose:guard` şunları denetler: compose'un okuduğu her değişken şablondadır, şablondaki her anahtar `.env.example`'da açıklanmıştır, compose/imaj anahtarları şablona yazılmaz, sır değerleri boştur, yerel değer yoktur.
+  - Diğer düzeltmeler: Postgres sağlık kontrolü TCP ile yapılır (PostGIS ilk kurulumunda geçici sunucu yalnızca soketi dinler; CI ve ilk deploy yarışı); `/ready` sürücü hata metnini vermez; admin alan adında `/dil` çalışır; worker Redis kesintisinde kapanışta takılmaz; web `build` görevi `typecheck`'ten sonra çalışır (`.next/types` yarışı).
+  - Çürütülen bulgu: migrate'in `lock_timeout=5s` değerinin advisory lock beklemesini de sınırlaması tasarım gereğidir (tek migrate servisi, hızlı başarısızlık).
+- **D-061 Repo herkese açık, `main` korumalı (kullanıcı kararı; D-025'in yerini alır).** GitHub Free'de özel repoda kural seti ve dal koruması yoktur (API 403). Seçenekler: GitHub Pro (4 $/ay), herkese açık repo, yalnızca yerel koruma. Kullanıcı herkese açık repoyu seçti.
+  - Açmadan önce bütün git geçmişi sır, anahtar, `.env` ve kişisel veri açısından tarandı; bulgu yok. VPS IP'si zaten DNS'te herkese açık.
+  - Kural seti `main-koruma`: silme ve force push yasak, yalnızca PR ve yalnızca merge commit, zorunlu kontroller `checks` ve `test-integration`, bypass yok. Gizli bilgi taraması, push koruması ve bağımlılık uyarıları açık.
+  - Sayfa kaynağında (HTML yorumu, `author`/`copyright` meta, `rel="license"`) sahiplik ve MIT bildirimi bulunur. MIT kopyalamaya izin verir; tek şartı kopyaların ve önemli bölümlerin telif bildirimini ve lisans metnini içermesidir, ihlal bunların olmadan kopyalamak ya da dağıtmaktır. "havayolu" adı ve logosu MIT kapsamında değildir; üçüncü taraf verileri kendi lisanslarındadır.
+
 ## 2026-09-25 — Marka ve alan adı
-- **D-059 Marka `havayolu`, alan adı `havayolu.live` (kullanıcı kararı; D-001'in yerini alır).** Repo `emindemirciai/havayolu` (özel). Host'lar: `havayolu.live` (web; `www` köke 308 ile yönlenir), `api.havayolu.live`, `admin.havayolu.live`, `analiz.havayolu.live`.
+- **D-059 Marka `havayolu`, alan adı `havayolu.live` (kullanıcı kararı; D-001'in yerini alır).** Repo `emindemirciai/havayolu` (D-061 ile herkese açık). Host'lar: `havayolu.live` (web; `www` köke 308 ile yönlenir), `api.havayolu.live`, `admin.havayolu.live`, `analiz.havayolu.live`.
   - Adlar: paket kapsamı `@havayolu/*`, GHCR imajları `ghcr.io/emindemirciai/havayolu-{web,api,worker}`, compose servis öneki `hy-`, Redis/çerez/olay öneki `hy`.
   - Yerel klasör `C:\PROJELER\havayolu`. Yedek klasörü kullanıcı isteğiyle masaüstündedir (`<Masaüstü>\havayolu-yedek`); `pnpm backup` masaüstünün gerçek yolunu Windows'tan sorar, `BACKUP_DIR` ile değiştirilebilir.
   - Uçuş sayfası yolu `/ucus/<flightId>` markadan bağımsızdır (Türkçe "uçuş") ve kalır.
@@ -30,14 +49,14 @@ Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en ü
 Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tutarlılık, yürütülebilirlik, hedefe uygunluk ve dil. 129 bulgunun kabul edilenleri işlendi.
 
 **Repo, yayın ve kaynaklar**
-- **D-025 Repo özel, plan GitHub Free (kullanıcı kararı).**
+- **D-025 Repo özel, plan GitHub Free (kullanıcı kararı).** (D-061: repo herkese açık, `main` kural setiyle korunur; açık repoda CI dakika sınırı yok.)
   - Dal koruması ve environment yok. Secrets repo düzeyinde tutulur.
   - CI ayda 2.000 dk ile sınırlı: PR çalışmaları iptal edilebilir, imajlar yalnızca `main`'de derlenir.
   - Repoyu kullanıcı web'den açar; ilk push'u ajan yapar.
 - **D-026 PR'ları ajan birleştirir (kullanıcı kararı).** CI yeşilse merge commit ile birleştirir (squash ve rebase yok), sonra yayını doğrular. Kırmızı PR birleştirilmez. D-019'daki "yalnızca kullanıcı birleştirir" kuralının yerini alır.
 - **D-027 Bütün servisler Parça 1'de tanımlanır (kullanıcı talebi: "sonradan tek tek uğraşmayalım").**
   - Servisler: web, API (WS), admin (aynı web konteyneri, `ADMIN_HOST`), iki worker, migrate, Postgres, iki Redis.
-  - `.env.example` bütün parçaların değişkenlerini baştan içerir; kullanıcı Dokploy'u bir kez kurar.
+  - `.env.example` bütün parçaların değişkenlerini baştan içerir; kullanıcı Dokploy'u bir kez kurar. (D-060: dosya Dokploy'a olduğu gibi kopyalanmaz; üretim bloğu `deploy/dokploy.env.example`'dadır.)
 - **D-028 Analiz = kullanıcının kendi uygulaması (Siteni Analiz Et, MIT).** Umami değerlendirildi, kullanıcı kendi reposunu seçti.
   - Ayrı bir Dokploy Compose uygulamasıdır; bizim API'miz onun platform-admin giriş sözleşmesini karşılar (`/api/auth/login`, `/api/admin/session`, `/api/auth/me`).
   - Takip script'i kalıcı `localStorage` kimliği tuttuğu için yalnızca kullanıcı onayıyla yüklenir (KVKK Çerez Rehberi).
@@ -45,7 +64,7 @@ Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tu
 - **D-029 Lisans: kod MIT (kullanıcı talebi).** Veri kendi lisansındadır: adsb.lol ODbL, OurAirports kamu malı, VRS CC0, OSM ODbL.
 - **D-030 Yerel portlar 3100/4100 vb.** Bu makinede 3000–3003 başka bir projenin konteynerlerinde. Konteyner içi üretim portları değişmez.
 - **D-031 adsb.lol hız bütçesi yarıya indi.** Başlangıç 0,1 istek/sn, üst sınır 0,2. Tazelik hedefleri: IST ≤ 20 sn, diğer istasyonlar ≤ 30 sn, Doğu ≤ 90 sn. Doğrulanan ölçüm "10 sn'de bir ya da daha yavaş" diyordu; önceki 0,2/0,5 değerleri bunun iki katıydı.
-- **D-032 Web ve API host'ları ayrı env'lerdir** (`WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYTICS_HOST`). `api.` öneki türetilmez. Kalıcı domain seçilene kadar geçici host kullanılır.
+- **D-032 Web ve API host'ları ayrı env'lerdir** (`WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYZE_HOST`). `api.` öneki türetilmez. Kalıcı domain seçilene kadar geçici host kullanılır.
 - **D-033 Dokploy secrets yokken deploy `DEPLOY_ENABLED` değişkeniyle atlanır.** İş özetine "YAYINLANMADI" yazılır (D-023'ün uygulaması).
 
 **Veritabanı ve yedekleme**

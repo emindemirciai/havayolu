@@ -1,14 +1,15 @@
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
-import rateLimit from '@fastify/rate-limit'
+import rateLimit, { normalizeIP } from '@fastify/rate-limit'
 import swagger from '@fastify/swagger'
 import { currentVersion } from '@havayolu/shared'
-import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify'
+import Fastify, { type FastifyInstance } from 'fastify'
 import type { Redis } from 'ioredis'
 import { collectServices, type ServiceProbes } from './admin/services'
 import { registerAuthRoutes, requireAdmin } from './auth/routes'
 import type { SessionStore } from './auth/session-store'
 import type { Env } from './env'
+import { clientIp } from './net/client-ip'
 
 export interface VersionInfo {
   app: 'havayolu'
@@ -38,20 +39,10 @@ export function allowedOrigins(env: Env): string[] {
   )
 }
 
-/** İstemci IP'si: Cloudflare modunda ve istek güvenilen proxy'den geldiyse CF-Connecting-IP. */
-export function clientIp(env: Env, request: FastifyRequest): string {
-  const cfIp = request.headers['cf-connecting-ip']
-  if (
-    env.EDGE_PROXY === 'cloudflare' &&
-    env.TRUSTED_PROXY_CIDRS.length > 0 &&
-    typeof cfIp === 'string'
-  ) {
-    return cfIp
-  }
-  return request.ip
-}
-
 const UNAUTHORIZED = { message: 'Yönetici oturumu gerekli.' }
+
+/** Ucuz ve durumsuz sistem uçları hız sınırına girmez: web'in /durum sayfası ve izleme bunları sık çağırır. */
+const NO_RATE_LIMIT = { rateLimit: false } as const
 
 export async function buildApp(env: Env, deps: AppDeps): Promise<FastifyInstance> {
   const startedAt = new Date()
@@ -73,7 +64,11 @@ export async function buildApp(env: Env, deps: AppDeps): Promise<FastifyInstance
     global: true,
     max: 300,
     timeWindow: '1 minute',
-    keyGenerator: (request) => clientIp(env, request),
+    // Özel anahtar üreticisinde eklentinin normalleştirmesi otomatik çalışmaz: IPv6 /64 bloğu tek
+    // ziyaretçi sayılır (blok içinde adres değiştirerek sınır aşılamaz), IPv4-mapped çözülür.
+    keyGenerator: (request) => normalizeIP(clientIp(env.EDGE_PROXY, request), 64),
+    // Sayaç deposu (redis-queue) hata verirse istek reddedilmez; API Redis kesintisinde de ayakta kalır.
+    skipOnError: true,
     ...(deps.rateLimitRedis ? { redis: deps.rateLimitRedis, nameSpace: 'hy:ratelimit:' } : {}),
     errorResponseBuilder: (_request, context) => ({
       statusCode: 429,
@@ -100,19 +95,26 @@ export async function buildApp(env: Env, deps: AppDeps): Promise<FastifyInstance
   }
 
   // Canlılık: süreç ayakta ve istek kabul ediyor mu.
-  app.get('/health', { schema: { tags: ['system'] } }, async () => ({ status: 'ok' as const }))
-  app.get('/version', { schema: { tags: ['system'] } }, async () => versionInfo)
+  app.get('/health', { config: NO_RATE_LIMIT, schema: { tags: ['system'] } }, async () => ({
+    status: 'ok' as const,
+  }))
+  app.get(
+    '/version',
+    { config: NO_RATE_LIMIT, schema: { tags: ['system'] } },
+    async () => versionInfo,
+  )
 
-  // Hazırlık: bağımlılıklar yanıt veriyor mu. Biri bile başarısızsa 503.
-  app.get('/ready', { schema: { tags: ['system'] } }, async (_request, reply) => {
+  // Hazırlık: bağımlılıklar yanıt veriyor mu. Biri bile başarısızsa 503. Herkese açık olduğu için
+  // sürücü hata metni (iç adresler, kullanıcı adı) yanıtta verilmez, yalnızca loglanır.
+  app.get('/ready', { schema: { tags: ['system'] } }, async (request, reply) => {
     const entries = await Promise.all(
       Object.entries(deps.readiness).map(async ([name, check]) => {
         if (!check) return [name, { ok: false, error: 'yapılandırılmamış' }] as const
         try {
           return [name, { ok: true, latencyMs: await check() }] as const
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'hata'
-          return [name, { ok: false, error: message }] as const
+          request.log.warn({ err: error, check: name }, 'hazırlık kontrolü başarısız')
+          return [name, { ok: false, error: 'erişilemiyor' }] as const
         }
       }),
     )
@@ -122,7 +124,9 @@ export async function buildApp(env: Env, deps: AppDeps): Promise<FastifyInstance
       .send({ status: ready ? 'ready' : 'not_ready', checks: Object.fromEntries(entries) })
   })
 
-  app.get('/openapi.json', { schema: { hide: true } }, async () => app.swagger())
+  app.get('/openapi.json', { config: NO_RATE_LIMIT, schema: { hide: true } }, async () =>
+    app.swagger(),
+  )
 
   const store = deps.sessionStore
   await registerAuthRoutes(app, {

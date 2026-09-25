@@ -8,6 +8,26 @@
 
 ---
 
+## v0.3.2 — 2026-09-25
+
+### Türkçe
+**Daha güvenli giriş, daha sağlam sunucu, açık kaynak**
+
+- Yönetici girişi artık başka birinin yanlış denemeleriyle kilitlenemiyor: deneme sınırı herkes için ayrı tutuluyor. Durum sayfası çok ziyaret edildiğinde sunucu diğer kullanıcılara kapanmıyor.
+- Sunucu, geçici bir önbellek kesintisinde de çalışmaya devam ediyor; ilk kurulumda veritabanı hazır olmadan başlamıyor.
+- Yönetim panelinde dil değiştirme düğmesi düzeldi.
+- Kaynak kodu herkese açık ve MIT lisanslı. Sayfa kaynağında sahiplik ve lisans bildirimi yer alıyor; havayolu adı ve logosu lisans kapsamı dışında, hakları saklı.
+
+### English
+**Safer sign-in, sturdier server, open source**
+
+- Admin sign-in can no longer be locked by someone else's failed attempts: the attempt limit is kept per visitor. The server no longer shuts out other users when the status page gets heavy traffic.
+- The server keeps running through a brief cache outage and no longer starts before the database is ready on first setup.
+- The language switch now works in the admin panel.
+- The source code is public under the MIT License. The page source carries an ownership and license notice; the havayolu name and logo are outside the license, rights reserved.
+
+---
+
 ## v0.3.1 — 2026-09-25
 
 ### Türkçe

@@ -4,8 +4,8 @@ Bu dizindeki dosyalar Claude Code'a verilecek görev tanımlarıdır. Oturum ba�
 
 ## Başlamadan önce (bir kez, senin yapacakların)
 1. **Kurulum:** Git for Windows, Node 24 LTS, `npm i -g pnpm@12.6.0`, Docker Desktop (WSL 2 ile), GitHub CLI (`gh`), Claude Code.
-2. **Repo:** `emindemirciai/havayolu` (özel) oluşturuldu. İlk push'u Claude yapar; bu, `main`'e yapılan tek doğrudan push'tur (D-024).
-3. **gh girişi:** `gh auth login` yap. Claude CI'yı izlemek ve PR'ları yönetmek için bunu kullanır.
+2. **Repo:** `emindemirciai/havayolu` oluşturuldu (herkese açık, `main` korumalı; D-061). İlk push'u Claude yaptı; bu, `main`'e yapılan tek doğrudan push'tur (D-024).
+3. **gh girişi:** `gh auth login` yapıldı (2026-09-25). Claude CI'yı izlemek ve PR'ları yönetmek için bunu kullanır.
 4. **Host ve e-posta:** Geçici host'u (mevcut domain'in alt alanı ya da sslip.io) ve `CONTACT_EMAIL` adresini belirle (bkz. `docs/ACTIVATION.md`).
 5. **Başlat:** Claude Code'u `C:\PROJELER\havayolu` klasöründe aç ve `@docs/prompts/parca-1.md dosyasındaki Parça 1'e başla` yaz.
 
@@ -29,5 +29,5 @@ Bu dizindeki dosyalar Claude Code'a verilecek görev tanımlarıdır. Oturum ba�
 
 ## Yayın nasıl çalışır
 - Birleştirilen her PR üretime yayındır; site 10–20 dk içinde güncellenir.
-- Kendin düzenleyip doğrudan `main`'e push edersen aynı kontroller çalışır; yeşilse yine yayına çıkar. Özel repo + ücretsiz planda dal koruması olmadığı için bu engellenmez.
+- `main`'e doğrudan push, force push ve dal silme GitHub'da engellidir. Kendi değişikliğini de bir dalda yapıp PR açarsın; CI yeşil olunca birleşir ve yayına çıkar.
 - Dokploy kurulumu bitene kadar (`DEPLOY_ENABLED=false`) CI yeşil kalır ama yayın yapılmaz. İş özetinde "YAYINLANMADI" yazar.

@@ -7,6 +7,32 @@ import type { ChangelogEntry } from './types'
  */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    version: '0.3.2',
+    date: '2026-09-25',
+    title: {
+      tr: 'Daha güvenli giriş, daha sağlam sunucu, açık kaynak',
+      en: 'Safer sign-in, sturdier server, open source',
+    },
+    items: [
+      {
+        tr: 'Yönetici girişi artık başka birinin yanlış denemeleriyle kilitlenemiyor: deneme sınırı herkes için ayrı tutuluyor. Durum sayfası çok ziyaret edildiğinde sunucu diğer kullanıcılara kapanmıyor.',
+        en: "Admin sign-in can no longer be locked by someone else's failed attempts: the attempt limit is kept per visitor. The server no longer shuts out other users when the status page gets heavy traffic.",
+      },
+      {
+        tr: 'Sunucu, geçici bir önbellek kesintisinde de çalışmaya devam ediyor; ilk kurulumda veritabanı hazır olmadan başlamıyor.',
+        en: 'The server keeps running through a brief cache outage and no longer starts before the database is ready on first setup.',
+      },
+      {
+        tr: 'Yönetim panelinde dil değiştirme düğmesi düzeldi.',
+        en: 'The language switch now works in the admin panel.',
+      },
+      {
+        tr: 'Kaynak kodu herkese açık ve MIT lisanslı. Sayfa kaynağında sahiplik ve lisans bildirimi yer alıyor; havayolu adı ve logosu lisans kapsamı dışında, hakları saklı.',
+        en: 'The source code is public under the MIT License. The page source carries an ownership and license notice; the havayolu name and logo are outside the license, rights reserved.',
+      },
+    ],
+  },
+  {
     version: '0.3.1',
     date: '2026-09-25',
     title: {

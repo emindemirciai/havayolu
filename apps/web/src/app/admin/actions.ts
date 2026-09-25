@@ -10,6 +10,7 @@ import {
   type LoginFailure,
 } from '@/lib/admin-api'
 import { getServerEnv } from '@/lib/env'
+import { clientForwardHeaders } from '@/lib/forwarded'
 
 export interface LoginState {
   error: LoginFailure | null
@@ -20,7 +21,7 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
   const password = String(formData.get('password') ?? '')
   if (!email || !password) return { error: 'invalid' }
 
-  const result = await loginToApi(email, password)
+  const result = await loginToApi(email, password, await clientForwardHeaders())
   if (!result.ok) return { error: result.reason }
 
   const store = await cookies()
@@ -37,7 +38,7 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
 export async function logoutAction(): Promise<void> {
   const store = await cookies()
   const token = store.get(ADMIN_COOKIE)?.value
-  if (token) await logoutFromApi(token)
+  if (token) await logoutFromApi(token, await clientForwardHeaders())
   store.delete({ name: ADMIN_COOKIE, path: '/admin' })
   redirect('/admin/giris')
 }
