@@ -51,10 +51,12 @@ describe('sistem uç noktaları', () => {
       status: 'not_ready',
       checks: {
         postgres: { ok: true },
-        redisQueue: { ok: false, error: 'bağlantı reddedildi' },
+        redisQueue: { ok: false, error: 'erişilemiyor' },
         redisLive: { ok: false, error: 'yapılandırılmamış' },
       },
     })
+    // Sürücü hata metni (iç adres, kullanıcı adı) herkese açık yanıtta yer almaz.
+    expect(res.body).not.toContain('bağlantı reddedildi')
     await broken.close()
   })
 
@@ -84,15 +86,28 @@ describe('env', () => {
     expect(parseEnv({ API_PORT: '' }).API_PORT).toBe(4100)
   })
 
-  it('üretimde port 4000 ve veri bağlantıları zorunlu', () => {
-    expect(() => parseEnv({ APP_ENV: 'production' })).toThrow(/DATABASE_URL/)
-    const prod = parseEnv({
+  it('üretimde port 4000; veri bağlantıları ve güvenilen proxy ağları zorunlu', () => {
+    const production = {
       APP_ENV: 'production',
       DATABASE_URL: 'postgres://u:p@db:5432/app',
       REDIS_QUEUE_URL: 'redis://:p@rq:6379/0',
       REDIS_LIVE_URL: 'redis://:p@rl:6379/0',
-    })
+      TRUSTED_PROXY_CIDRS: '10.0.0.0/8, 172.16.0.0/12',
+    }
+    expect(() => parseEnv({ APP_ENV: 'production' })).toThrow(/DATABASE_URL/)
+    expect(() => parseEnv({ ...production, TRUSTED_PROXY_CIDRS: '' })).toThrow(
+      /TRUSTED_PROXY_CIDRS/,
+    )
+    const prod = parseEnv(production)
     expect(prod.API_PORT).toBe(4000)
+    expect(prod.TRUSTED_PROXY_CIDRS).toEqual(['10.0.0.0/8', '172.16.0.0/12'])
+  })
+
+  it('geçersiz proxy ağı reddedilir; boş GIT_SHA açılışı engellemez', () => {
+    expect(() => parseEnv({ TRUSTED_PROXY_CIDRS: '10.0.0.0/33' })).toThrow(/TRUSTED_PROXY_CIDRS/)
+    expect(() => parseEnv({ TRUSTED_PROXY_CIDRS: 'traefik' })).toThrow(/TRUSTED_PROXY_CIDRS/)
+    expect(parseEnv({ GIT_SHA: '' }).GIT_SHA).toBe('dev')
+    expect(parseEnv({ GIT_SHA: '  ' }).GIT_SHA).toBe('dev')
   })
 
   it('yönetici bilgileri birlikte tanımlanmalı ve anahtar en az 32 karakter olmalı', () => {

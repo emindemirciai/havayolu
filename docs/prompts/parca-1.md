@@ -87,7 +87,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
      - Advanced → Isolated Deployments kapalı kalır.
      - "Create env file" açık kalır.
   4. **Registry:** `ghcr.io` + classic PAT (`read:packages`).
-  5. **Environment:** `.env.example`'daki **bütün** üretim değişkenlerini gir; sonraki parçaların değişkenleri boş kalabilir. Sırları (`ADMIN_SETUP_TOKEN`, DB ve Redis parolaları) parola yöneticisinde üret; yalnızca `[A-Za-z0-9_-]` karakterlerini kullan.
+  5. **Environment:** `deploy/dokploy.env.example` bloğunu gir (sırları doldurarak); sonraki parçaların değişkenleri boş kalabilir. `.env.example` **olduğu gibi kopyalanmaz** (D-060): içindeki `*_dev_only` parolalar, localhost host'ları ve `EXTERNAL_PROVIDERS_DISABLED=true` yereldir. `GIT_SHA` ve `BUILD_TIME` imaja gömülür, Dokploy'a girilmez. Sırları (`ADMIN_SETUP_TOKEN`, DB ve Redis parolaları) parola yöneticisinde üret; yalnızca `[A-Za-z0-9_-]` karakterlerini kullan.
   6. **Host'lar:** 4 host belirlenir: `WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYTICS_HOST`.
      - Değerler: `WEB_HOST=havayolu.live`, `API_HOST=api.havayolu.live`, `ADMIN_HOST=admin.havayolu.live`, analiz `analiz.havayolu.live`; ayrıca `www.havayolu.live` (web köke yönlendirir).
      - DNS A kayıtları VPS IP'sine yönlenir.
@@ -97,7 +97,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
      - `hy-api` → `api.havayolu.live` (port 4000)
 
      Hepsinde HTTPS + Let's Encrypt açıktır. Domain değişikliğinden sonra yeniden deploy edilir.
-  7b. **Analiz uygulaması:** Aynı Dokploy projesinde ikinci bir Compose uygulaması oluşturulur (kendi README'sindeki gibi): repo `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, servis `analyze`, port 3000, domain `ANALYTICS_HOST`. Env bloğu DEPLOY_DOKPLOY.md'de bu projenin değerleriyle hazır verilir:
+  7b. **Analiz uygulaması:** Aynı Dokploy projesinde ikinci bir Compose uygulaması oluşturulur (kendi README'sindeki gibi): repo `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, servis `analyze`, port 3000, domain `ANALYTICS_HOST`. Env bloğu `deploy/analiz.env.example`'da bu projenin değerleriyle hazırdır:
       - `ANALYZE_SITE_ID=${WEB_HOST}`
       - `ANALYZE_AUTH_MODE=platform-admin`, `ANALYZE_AUTH_API_URL=https://${API_HOST}`
       - `ANALYZE_ALLOWED_ORIGINS=https://${WEB_HOST}`, `ANALYZE_EVENT_SITES=${WEB_HOST}`
@@ -108,7 +108,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
   9. **GitHub:** Settings → Secrets and variables → Actions.
      - Secrets: `DOKPLOY_URL`, `DOKPLOY_API_TOKEN`, `DOKPLOY_COMPOSE_ID` (servis URL'sinden alınır).
      - Variables: `WEB_URL`, `API_URL`, `DEPLOY_ENABLED=false`.
-     - Repo özel + Free olduğu için dal koruması ve environment yoktur.
+     - Repo herkese açıktır ve `main` kural setiyle korunur (D-061). Fork PR'larına secrets verilmez.
   10. **Deneme:** `gh workflow run deploy.yml -f dry_run=true` ile imajlar derlenir. Sonra `DEPLOY_ENABLED=true` yapılır ve ilk yayın yapılır.
   11. **Doğrulama listesi:**
       - `curl ${API_URL}/version`

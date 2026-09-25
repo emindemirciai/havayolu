@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { connection } from 'next/server'
 import { ADMIN_COOKIE, fetchServices } from '@/lib/admin-api'
 import { getServerEnv } from '@/lib/env'
+import { clientForwardHeaders } from '@/lib/forwarded'
 import { getLocale } from '@/lib/locale'
 import { logoutAction } from './actions'
 
@@ -75,7 +76,7 @@ export default async function AdminServicesPage() {
 
   const locale = await getLocale()
   const t = getMessages(locale).admin
-  const result = await fetchServices(token)
+  const result = await fetchServices(token, await clientForwardHeaders())
   if (!result.ok && result.reason === 'unauthorized') redirect('/admin/giris')
   const analyticsUrl = getServerEnv().ANALYTICS_URL
 

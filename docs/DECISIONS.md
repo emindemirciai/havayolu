@@ -2,8 +2,21 @@
 
 Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en üsttedir.
 
+## 2026-09-25 — Birleştirme öncesi inceleme ve repo koruması (v0.3.2)
+- **D-060 İstemci IP'si, hız sınırı ve üretim env sözleşmesi.** Çok ajanlı inceleme (4 açı + çürütmeye çalışan doğrulayıcılar) şunu gösterdi: web API'yi iç ağdan çağırdığı için bütün ziyaretçiler tek bir hız sayacına düşüyordu. Dakikada 5 yanlış giriş yöneticiyi kilitliyordu, ~150 `/durum` açılışı API'yi 429'a sokuyordu.
+  - Web, ziyaretçinin `X-Forwarded-For` ve `CF-Connecting-IP` başlıklarını iletir. API yalnızca `TRUSTED_PROXY_CIDRS`'teki adreslerden gelen zincire güvenir; üretimde bu değişken zorunludur, compose boşsa Docker'ın özel ağlarını verir. Ön koşul: uygulama konteynerleri dışarıya port açmaz.
+  - `CF-Connecting-IP` yalnızca isteği ileten adres Cloudflare'in yayımlanmış ağlarındaysa kullanılır (liste koda gömülü, kaynak cloudflare.com/ips). Alternatif (yalnızca `X-Forwarded-For`) Traefik'in Cloudflare'e güvenmesini gerektirirdi; Dokploy ayarına bağımlı olmamak için seçilmedi.
+  - `/health`, `/version`, `/openapi.json` hız sınırı dışında; `/ready` veritabanına dokunduğu için sınır içinde. Sayaç deposu hatasında istek geçer (`skipOnError`); aksi hâlde redis-queue kesintisi API'yi sağlıksız sayıp trafikten düşürüyordu.
+  - `.env.example` Dokploy'a olduğu gibi kopyalanmaz (D-027'nin "hepsini gir" kısmını değiştirir): geliştirme parolaları, localhost host'ları ve `EXTERNAL_PROVIDERS_DISABLED=true` üretime taşınırdı. `GIT_SHA` dosyadan çıkarıldı (env_file imajdaki değeri eziyordu, boşsa servisler çöküyordu); üç şema da boş değeri tolere eder. `EXPECTED_WORKERS` üretimde compose'da sabittir. Üretim env bloğu `deploy/dokploy.env.example`'dadır (analiz uygulaması: `deploy/analiz.env.example`). `pnpm compose:guard` şunları denetler: compose'un okuduğu her değişken şablondadır, şablondaki her anahtar `.env.example`'da açıklanmıştır, compose/imaj anahtarları şablona yazılmaz, sır değerleri boştur, yerel değer yoktur.
+  - Diğer düzeltmeler: Postgres sağlık kontrolü TCP ile yapılır (PostGIS ilk kurulumunda geçici sunucu yalnızca soketi dinler; CI ve ilk deploy yarışı); `/ready` sürücü hata metnini vermez; admin alan adında `/dil` çalışır; worker Redis kesintisinde kapanışta takılmaz; web `build` görevi `typecheck`'ten sonra çalışır (`.next/types` yarışı).
+  - Çürütülen bulgu: migrate'in `lock_timeout=5s` değerinin advisory lock beklemesini de sınırlaması tasarım gereğidir (tek migrate servisi, hızlı başarısızlık).
+- **D-061 Repo herkese açık, `main` korumalı (kullanıcı kararı).** GitHub Free'de özel repoda kural seti ve dal koruması yoktur (API 403). Seçenekler: GitHub Pro (4 $/ay), herkese açık repo, yalnızca yerel koruma. Kullanıcı herkese açık repoyu seçti.
+  - Açmadan önce bütün git geçmişi sır, anahtar, `.env` ve kişisel veri açısından tarandı; bulgu yok. VPS IP'si zaten DNS'te herkese açık.
+  - Kural seti `main-koruma`: silme ve force push yasak, yalnızca PR ve yalnızca merge commit, zorunlu kontroller `checks` ve `test-integration`, bypass yok. Gizli bilgi taraması, push koruması ve bağımlılık uyarıları açık.
+  - Sayfa kaynağında (HTML yorumu, `author`/`copyright` meta, `rel="license"`) sahiplik ve MIT bildirimi bulunur. MIT kopyalamaya izin verir; ihlal, telif bildiriminin ve lisans metninin korunmamasıdır. "havayolu" adı ve içerik MIT kapsamında değildir.
+
 ## 2026-09-25 — Marka ve alan adı
-- **D-059 Marka `havayolu`, alan adı `havayolu.live` (kullanıcı kararı; D-001'in yerini alır).** Repo `emindemirciai/havayolu` (özel). Host'lar: `havayolu.live` (web; `www` köke 308 ile yönlenir), `api.havayolu.live`, `admin.havayolu.live`, `analiz.havayolu.live`.
+- **D-059 Marka `havayolu`, alan adı `havayolu.live` (kullanıcı kararı; D-001'in yerini alır).** Repo `emindemirciai/havayolu` (D-061 ile herkese açık). Host'lar: `havayolu.live` (web; `www` köke 308 ile yönlenir), `api.havayolu.live`, `admin.havayolu.live`, `analiz.havayolu.live`.
   - Adlar: paket kapsamı `@havayolu/*`, GHCR imajları `ghcr.io/emindemirciai/havayolu-{web,api,worker}`, compose servis öneki `hy-`, Redis/çerez/olay öneki `hy`.
   - Yerel klasör `C:\PROJELER\havayolu`. Yedek klasörü kullanıcı isteğiyle masaüstündedir (`<Masaüstü>\havayolu-yedek`); `pnpm backup` masaüstünün gerçek yolunu Windows'tan sorar, `BACKUP_DIR` ile değiştirilebilir.
   - Uçuş sayfası yolu `/ucus/<flightId>` markadan bağımsızdır (Türkçe "uçuş") ve kalır.
@@ -37,7 +50,7 @@ Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tu
 - **D-026 PR'ları ajan birleştirir (kullanıcı kararı).** CI yeşilse merge commit ile birleştirir (squash ve rebase yok), sonra yayını doğrular. Kırmızı PR birleştirilmez. D-019'daki "yalnızca kullanıcı birleştirir" kuralının yerini alır.
 - **D-027 Bütün servisler Parça 1'de tanımlanır (kullanıcı talebi: "sonradan tek tek uğraşmayalım").**
   - Servisler: web, API (WS), admin (aynı web konteyneri, `ADMIN_HOST`), iki worker, migrate, Postgres, iki Redis.
-  - `.env.example` bütün parçaların değişkenlerini baştan içerir; kullanıcı Dokploy'u bir kez kurar.
+  - `.env.example` bütün parçaların değişkenlerini baştan içerir; kullanıcı Dokploy'u bir kez kurar. (D-060: dosya Dokploy'a olduğu gibi kopyalanmaz; üretim bloğu `deploy/dokploy.env.example`'dadır.)
 - **D-028 Analiz = kullanıcının kendi uygulaması (Siteni Analiz Et, MIT).** Umami değerlendirildi, kullanıcı kendi reposunu seçti.
   - Ayrı bir Dokploy Compose uygulamasıdır; bizim API'miz onun platform-admin giriş sözleşmesini karşılar (`/api/auth/login`, `/api/admin/session`, `/api/auth/me`).
   - Takip script'i kalıcı `localStorage` kimliği tuttuğu için yalnızca kullanıcı onayıyla yüklenir (KVKK Çerez Rehberi).

@@ -74,10 +74,15 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
   - DEFAULT varken `DETACH … CONCURRENTLY` kullanılamaz. Süresi dolan partition'lar gece, `lock_timeout=5s` ile `DETACH PARTITION` (CONCURRENTLY olmadan) + `DROP TABLE` komutlarıyla silinir. Kilit alınamazsa jitter'lı yeniden deneme yapılır.
 - **CI testleri:** Temiz DB'de baştan sona migration. Yükseltme testi: `origin/main`'deki migration'lar temiz DB'ye, üstüne dalın migration'ları uygulanır; main'de migration yoksa iş başarılı sayılır.
 
-## CI/CD (özel repo, GitHub Free)
-**Kısıtlar**
-- Özel repo + Free planda **dal koruması ve environment yoktur.** Secrets repo düzeyinde tutulur (Settings → Secrets and variables → Actions); `environment:` satırı kullanılmaz.
-- Actions ayda 2.000 dk ile sınırlıdır. Bu yüzden:
+## CI/CD (herkese açık repo, GitHub Free)
+**Kısıtlar ve korumalar (D-061)**
+- Repo herkese açıktır. `main` bir kural setiyle (`main-koruma`) korunur ve kimse bu kuralları atlayamaz:
+  - silme ve force push yasaktır
+  - değişiklik yalnızca PR ile ve yalnızca merge commit olarak girer
+  - zorunlu kontroller `checks` ve `test-integration` yeşil olmalıdır
+- Gizli bilgi taraması ve push koruması açıktır: sır içeren bir push GitHub'da reddedilir. Bağımlılık güvenlik uyarıları açıktır.
+- Secrets repo düzeyinde tutulur (Settings → Secrets and variables → Actions). Fork'tan gelen PR'lara secrets verilmez; deploy yalnızca `main` push'unda çalışır.
+- Herkese açık repoda Actions dakikası sınırsızdır. Yine de gereksiz iş yapılmaz:
   - PR çalışmaları iptal edilebilir
   - imajlar yalnızca `main`'de derlenir
   - e2e yalnızca ilgili dosyalar değişince çalışır
@@ -169,5 +174,11 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
   - Doğrulama: anahtarla başka bir projenin compose'unu okumayı dene; 401/403 beklenir. 200 dönerse DUR-SOR.
   - Bitiş tarihi ACTIVATION'a yazılır.
 - **GHCR çekme kimliği:** classic PAT, yalnızca `read:packages` yetkisiyle.
-- **Proxy güveni:** Fastify `trustProxy` yalnızca `TRUSTED_PROXY_CIDRS`'e (Traefik ağı) güvenir. Cloudflare önde ise `CF-Connecting-IP` kullanılır.
+- **Proxy güveni ve istemci IP'si (D-060):**
+  - Fastify `trustProxy` yalnızca `TRUSTED_PROXY_CIDRS`'e güvenir. Üretimde zorunludur; compose boşsa Docker'ın özel ağlarını (`10.0.0.0/8,172.16.0.0/12,192.168.0.0/16`) verir. Bu güvenin ön koşulu hiçbir uygulama konteynerinin dışarıya port açmamasıdır (yalnızca Traefik).
+  - Web sunucusu API'yi iç ağdan çağırırken ziyaretçinin `X-Forwarded-For` ve `CF-Connecting-IP` başlıklarını iletir; hız sınırı ziyaretçi başına tutulur.
+  - Cloudflare önde ise (`EDGE_PROXY=cloudflare`) `CF-Connecting-IP`, yalnızca isteği ileten adres Cloudflare'in yayımlanmış ağlarındaysa kullanılır (liste `apps/api/src/net/client-ip.ts`'te). Sunucuya doğrudan gelen biri başlığı uyduramaz.
+  - `/health`, `/version` ve `/openapi.json` hız sınırına girmez. Sayaç deposu (redis-queue) hata verirse sınır uygulanmaz, istek reddedilmez (`skipOnError`).
+  - Bilinen sınır: Başka bir sunucu API'yi kendi adına çağırırsa (ör. analiz uygulamasının girişi) bütün istekleri o sunucunun IP'siyle tek sayaca düşer.
+- **`/ready` yanıtı** herkese açıktır; sürücü hata metni yerine yalnızca `erişilemiyor` döner, ayrıntı loglanır. Ayrıntılı durum yalnızca oturumlu `/v1/admin/services`'tedir.
 - **Log gizliliği:** pino `redact` ayarıyla authorization, cookie, `*.token` ve `*.password` alanları loglanmaz.

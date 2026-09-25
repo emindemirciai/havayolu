@@ -113,4 +113,13 @@ export const en: Messages = {
       'The page you are looking for does not exist or has moved. Continue from the status page.',
     goToStatus: 'Go to status page',
   },
+  legal: {
+    owner: '{app} · © {year} {owner} ({ownerUrl}) · Source code: {repoUrl}',
+    license:
+      'The code of this software is licensed under the MIT License. Anyone who uses, copies, modifies or distributes the code must keep this copyright notice and the MIT license text intact.',
+    violation:
+      'Any use that does not meet this condition infringes the license and the copyright; the copyright holder may take legal action under Turkish Law No. 5846 on Intellectual and Artistic Works and international copyright law.',
+    brand:
+      'The “{app}” name, logo and site content are not covered by the MIT License; all rights reserved.',
+  },
 }

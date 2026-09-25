@@ -15,8 +15,9 @@ services:
       - '127.0.0.1:55432:5432'
     volumes:
       - dev_pgdata:/var/lib/postgresql
+    # TCP üzerinden denenir: PostGIS ilk kurulumunda geçici sunucu yalnızca unix soketini dinler.
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U havayolu -d app_dev']
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -p 5432 -U havayolu -d app_dev']
       interval: 3s
       timeout: 3s
       retries: 20

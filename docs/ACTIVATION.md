@@ -9,7 +9,7 @@ Durum işaretleri: `[ ]` bekliyor, `[x]` tamam, `[-]` bilinçli olarak yapılmı
 |---|---|---|
 | Hostinger KVM 2 | zaten ödeniyor | Ek gider yok. Bellek eşiği aşılırsa KVM 4: 12,99 $/ay (kampanya), yenilemede 28,99 $/ay |
 | Domain | kalıcı domain seçilince (geçici host ücretsiz) | ~10–20 $/yıl |
-| GitHub (özel repo, Free) | başlangıç | 0; Actions ayda 2.000 dk |
+| GitHub (herkese açık repo, Free) | başlangıç | 0; Actions dakikası sınırsız, dal koruması ücretsiz |
 | GHCR, adsb.lol, OpenFreeMap, OurAirports, VRS, aviationweather | — | 0 |
 | Analiz (kendi uygulaman) | Parça 1 | 0 (aynı VPS'te ~150–250 MB) |
 | SMTP (doğrulama/şifre e-postaları) | Parça 2B | ücretsiz katman yeter |
@@ -26,8 +26,8 @@ Web sürümü (Parça 1–3) için zorunlu tek ek gider kalıcı domain'dir. İk
 ## Adımlar
 | Durum | Adım | Env / secret | Nerede | Neyi açar |
 |---|---|---|---|---|
-| [x] | GitHub'da boş **özel** repo: `emindemirciai/havayolu` (2026-09-25) | — | github.com | İlk push |
-| [ ] | `gh auth login` | — | Terminal | CI izleme, PR ve birleştirme |
+| [x] | GitHub repo `emindemirciai/havayolu` (2026-09-25). Kullanıcı kararıyla **herkese açık** yapıldı; `main` kural seti, gizli bilgi taraması ve push koruması açık (D-061) | — | github.com | İlk push, dal koruması |
+| [x] | `gh auth login` (2026-09-25) | — | Terminal | CI izleme, PR ve birleştirme |
 | [x] | DNS kayıtları (2026-09-25): A `@`, `api`, `admin`, `analiz` → `72.62.53.122` (TTL 60); CNAME `www` → `havayolu.live` (TTL 300). Hostinger DNS'inde girildi; yeni kayıtlı alan adı olduğu için dünya genelinde görünmesi birkaç saat sürebilir. Dokploy'da alan adı eklemeden önce `nslookup havayolu.live 1.1.1.1` ile doğrulanır | `WEB_HOST=havayolu.live`, `API_HOST=api.havayolu.live`, `ADMIN_HOST=admin.havayolu.live`, `ANALYTICS_URL=https://analiz.havayolu.live` | Hostinger DNS | Yayın |
 | [x] | Ad ve alan adı: **havayolu** · **havayolu.live** (kayıt 2026-09-25, bitiş 2027-09-25). Domain değişirse web push abonelikleri, ana ekran kurulumları, uygulama bağlantıları, Play'deki `/hesap-silme` adresi ve User-Agent değişir | `APP_NAME=havayolu` | — | Kalıcı yayın |
 | [ ] | İletişim e-postası (adsb.lol User-Agent'ı, yasal metinler) | `CONTACT_EMAIL` | — | Canlı veri (boşsa ingest başlamaz) |
@@ -40,12 +40,12 @@ Web sürümü (Parça 1–3) için zorunlu tek ek gider kalıcı domain'dir. İk
 ### Parça 1
 | Durum | Adım | Env / secret | Nerede | Neyi açar |
 |---|---|---|---|---|
-| [ ] | `docs/DEPLOY_DOKPLOY.md` adımları: Dokploy ≥ v0.30.7, panel domain + `ufw-docker` ile 3000 kapalı, Let's Encrypt e-postası, Compose servisi (Autodeploy KAPALI), GHCR registry, Environment (bütün değişkenler), domain'ler | `.env.example`'daki tüm değişkenler | Dokploy | Yayın |
-| [ ] | Sırları parola yöneticisinde üret ve Dokploy'a gir (yalnızca `[A-Za-z0-9_-]`) | `ADMIN_SETUP_TOKEN`, `POSTGRES_PASSWORD`, `REDIS_*_PASSWORD` | Parola yöneticisi → Dokploy | Admin girişi, veritabanları |
+| [ ] | `docs/DEPLOY_DOKPLOY.md` adımları: Dokploy ≥ v0.30.7, panel domain + `ufw-docker` ile 3000 kapalı, Let's Encrypt e-postası, Compose servisi (Autodeploy KAPALI), GHCR registry, Environment (`deploy/dokploy.env.example` bloğu; `.env.example` olduğu gibi kopyalanmaz, `GIT_SHA`/`BUILD_TIME` girilmez), domain'ler | `deploy/dokploy.env.example` (D-060) | Dokploy | Yayın |
+| [ ] | Sırları üret ve Dokploy'a gir (yalnızca `[A-Za-z0-9_-]`, her biri farklı). Parola yöneticisi ya da PowerShell'de güvenli üretici: `$b = New-Object byte[] 36; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b).Replace('+','-').Replace('/','_').TrimEnd('=')` (48 karakter). Değerleri parola yöneticisine de kaydet | `ADMIN_SETUP_TOKEN`, `POSTGRES_PASSWORD`, `REDIS_QUEUE_PASSWORD`, `REDIS_LIVE_PASSWORD` | Parola yöneticisi → Dokploy | Admin girişi, veritabanları |
 | [ ] | VPS: 2 GB swap + `vm.overcommit_memory=1` (tüm projeleri etkiler; bilinçli uygula) | — | VPS (SSH) | Bellek güvenliği |
 | [ ] | GitHub secrets ve variables | `DOKPLOY_URL`, `DOKPLOY_API_TOKEN`, `DOKPLOY_COMPOSE_ID`; `WEB_URL`, `API_URL`, `DEPLOY_ENABLED` | GitHub → Settings → Secrets and variables | Otomatik yayın |
 | [ ] | Deploy-bot API token'ının kapsamını doğrula; bitiş tarihini buraya yaz | — | Dokploy | Güvenlik |
-| [ ] | Analiz uygulamasını ayrı Dokploy Compose uygulaması olarak kur (repo `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, env bloğu DEPLOY_DOKPLOY.md'de, `ANALYZE_GEO_LOOKUP=false`) | `ANALYTICS_URL`, `ANALYTICS_SITE_ID` | Dokploy | Ziyaretçi analizi |
+| [ ] | Analiz uygulamasını ayrı Dokploy Compose uygulaması olarak kur (repo `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, env bloğu `deploy/analiz.env.example`, `ANALYZE_GEO_LOOKUP=false`) | `ANALYTICS_URL`, `ANALYTICS_SITE_ID` | Dokploy | Ziyaretçi analizi |
 | [ ] | 24 saatlik kapsama raporu: admin panelinden `coverage:report` (üretim yoksa `pnpm coverage:probe --hours 24`, bilgisayar uyku moduna geçmeden) | — | Admin / bilgisayar | Parça 2 kararları |
 
 ### Parça 2

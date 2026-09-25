@@ -2,7 +2,7 @@
 
 **[Türkçe](#türkçe) · [English](#english)**
 
-![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.3.1-blue) ![lisans](https://img.shields.io/badge/lisans-MIT-green) ![durum](https://img.shields.io/badge/durum-geli%C5%9Ftirme-yellow)
+![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.3.2-blue) ![lisans](https://img.shields.io/badge/lisans-MIT-green) ![durum](https://img.shields.io/badge/durum-geli%C5%9Ftirme-yellow)
 
 ---
 
@@ -14,13 +14,14 @@ Türkiye odaklı sivil havacılık uçuş takip platformu. Canlı harita, uçuş
 
 > **Bilinen sınır:** Kendi ADS-B alıcımız olmadığı için İstanbul Havalimanı'nda iniş anı çoğunlukla doğrudan görülmez. İniş bildirimi çoğu uçuşta "muhtemelen indi (tahmini saat)" olarak ve son sinyalden 1–1,5 dk sonra gelir. Bazı uçuşlarda yalnızca "iniş verisi alınamadı" denebilir.
 
-### Durum — v0.3.1
+### Durum — v0.3.2
 | Alan | Durum |
 |---|---|
 | Yol haritası, veri kaynakları, mimari | ✅ Hazır ve doğrulandı |
 | Yerel test ortamı, Durum ve Yenilikler sayfaları | ✅ Parça 1 · M0 |
 | Bütün servisler, yönetim paneli (Servisler ekranı), onaylı analiz | ✅ Parça 1 · M1a |
 | Marka ve alan adı: havayolu · havayolu.live (DNS kayıtları girildi) | ✅ v0.3.1 |
+| Güvenlik sertleştirmesi (ziyaretçi başına giriş sınırı, Redis kesintisine dayanıklılık), açık kaynak repo, korumalı `main` | ✅ v0.3.2 |
 | Otomatik yayın hattı (GitHub Actions → GHCR → Dokploy) | ⏳ Parça 1 · M1b |
 | Canlı harita ve arama | ⏳ Parça 1 · M6 |
 | 10 km ve iniş bildirimi (web push) | ⏳ Parça 2 · M4 |
@@ -51,25 +52,25 @@ pnpm dev
 - `docs/ACTIVATION.md`: elle yapılacak dış adımlar ve **maliyet özeti**
 - `docs/DECISIONS.md`: kararlar ve gerekçeleri
 
-### İstatistik (v0.3.1)
-Git'te 149 dosya, **8.400 satır**. Bunun 4.884 satırı kod (TypeScript, TSX, CSS, JS), 2.186 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
+### İstatistik (v0.3.2)
+Git'te 157 dosya, **9.140 satır**. Bunun 5.378 satırı kod (TypeScript, TSX, CSS, JS), 2.242 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
 
 | Alan | Satır |
 |---|---|
-| docs | 1.685 |
-| apps/web | 1.629 |
-| apps/api | 1.417 |
-| packages/shared | 505 |
-| apps/worker | 391 |
+| apps/web | 1.735 |
+| docs | 1.719 |
+| apps/api | 1.660 |
+| packages/shared | 541 |
+| apps/worker | 409 |
 | packages/db | 372 |
-| packages/i18n | 340 |
-| scripts | 256 |
+| packages/i18n | 359 |
+| scripts | 328 |
 | packages/providers | 197 |
 | packages/geo | 152 |
-| diğer (kök, .claude, .github) | 1.456 |
+| diğer (kök, deploy, .claude, .github) | 1.668 |
 
 ### Lisans, veri ve atıflar
-- Kod [MIT lisansı](LICENSE) ile lisanslanmıştır.
+- Kod [MIT lisansı](LICENSE) ile lisanslanmıştır: © 2026 [emindemirciai](https://github.com/emindemirciai). Kodu kullanan herkes telif bildirimini ve lisans metnini korumak zorundadır; korumamak lisans ve telif hakkı ihlalidir. **havayolu** adı, logosu ve site içeriği MIT kapsamında değildir, tüm hakları saklıdır. Aynı bildirim sitenin sayfa kaynağında da yer alır.
 - Canlı uçuş verisi [ADSB.lol](https://adsb.lol)'den gelir ve [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) lisansına tabidir.
 - Harita: OpenFreeMap © OpenMapTiles, veriler © OpenStreetMap katkıcıları.
 - Havalimanları OurAirports'tan (kamu malı), havayolu ve rota verisi VRS standing-data'dan (CC0), hava durumu NOAA Aviation Weather Center'dan gelir.
@@ -85,13 +86,14 @@ A Türkiye-focused civil aviation flight tracker. It offers a live map and lets 
 
 > **Known limitation:** Without our own ADS-B receiver, the moment of touchdown at Istanbul Airport is usually not observed directly. For most flights the landing alert says "probably landed (estimated time)" and arrives 1–1.5 minutes after the last signal. For some flights it can only say "landing data unavailable".
 
-### Status — v0.3.1
+### Status — v0.3.2
 | Area | Status |
 |---|---|
 | Roadmap, data sources, architecture | ✅ Done and verified |
 | Local test environment, Status and What's new pages | ✅ Part 1 · M0 |
 | All services, admin panel (Services screen), consent-based analytics | ✅ Part 1 · M1a |
 | Brand and domain: havayolu · havayolu.live (DNS records added) | ✅ v0.3.1 |
+| Security hardening (per-visitor sign-in limit, resilience to Redis outages), public repo, protected `main` | ✅ v0.3.2 |
 | Automatic release pipeline (GitHub Actions → GHCR → Dokploy) | ⏳ Part 1 · M1b |
 | Live map and search | ⏳ Part 1 · M6 |
 | 10 km and landing alerts (web push) | ⏳ Part 2 · M4 |
@@ -122,11 +124,11 @@ Then open `http://localhost:3100/durum` and `http://localhost:3100/yenilikler`. 
 - `docs/ACTIVATION.md`: manual external steps and the **cost summary**
 - `docs/DECISIONS.md`: decisions and rationale
 
-### Stats (v0.3.1)
-149 files and **8,400 lines** in git: 4,884 lines of code (TypeScript, TSX, CSS, JS) and 2,186 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
+### Stats (v0.3.2)
+157 files and **9,140 lines** in git: 5,378 lines of code (TypeScript, TSX, CSS, JS) and 2,242 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
 
 ### License, data and attribution
-- Code is licensed under the [MIT License](LICENSE).
+- Code is licensed under the [MIT License](LICENSE): © 2026 [emindemirciai](https://github.com/emindemirciai). Anyone using the code must keep the copyright notice and license text; failing to do so infringes the license and the copyright. The **havayolu** name, logo and site content are not covered by the MIT License; all rights reserved. The same notice appears in the page source of the site.
 - Live flight data comes from [ADSB.lol](https://adsb.lol) and is subject to [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 - Map: OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors.
 - Airports come from OurAirports (public domain), airlines and routes from VRS standing-data (CC0), weather from NOAA Aviation Weather Center.

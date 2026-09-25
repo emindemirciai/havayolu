@@ -14,16 +14,20 @@ function apiUrl(path: string): string {
   return new URL(path, getServerEnv().API_INTERNAL_URL).toString()
 }
 
+/** İstemci başlıkları: `clientForwardHeaders()` (lib/forwarded.ts); hız sınırı istemci başına tutulur. */
+type ForwardHeaders = Record<string, string>
+
 /** API'nin platform-admin sözleşmesiyle giriş yapar (analiz uygulamasıyla aynı uç nokta). */
 export async function loginToApi(
   email: string,
   password: string,
+  forwarded: ForwardHeaders,
 ): Promise<{ ok: true; token: string } | { ok: false; reason: LoginFailure }> {
   let response: Response
   try {
     response = await fetch(apiUrl('/api/auth/login'), {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { ...forwarded, 'content-type': 'application/json' },
       body: JSON.stringify({ email, password }),
       cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -42,12 +46,13 @@ export async function loginToApi(
 
 export async function fetchServices(
   token: string,
+  forwarded: ForwardHeaders,
 ): Promise<
   { ok: true; report: ServicesReport } | { ok: false; reason: 'unauthorized' | 'unavailable' }
 > {
   try {
     const response = await fetch(apiUrl('/v1/admin/services'), {
-      headers: { authorization: `Bearer ${token}` },
+      headers: { ...forwarded, authorization: `Bearer ${token}` },
       cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
@@ -59,11 +64,11 @@ export async function fetchServices(
   }
 }
 
-export async function logoutFromApi(token: string): Promise<void> {
+export async function logoutFromApi(token: string, forwarded: ForwardHeaders): Promise<void> {
   try {
     await fetch(apiUrl('/api/auth/logout'), {
       method: 'POST',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { ...forwarded, authorization: `Bearer ${token}` },
       cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })

@@ -111,6 +111,16 @@ export const tr = {
     notFoundBody: 'Aradığın sayfa yok ya da taşınmış. Durum sayfasından devam edebilirsin.',
     goToStatus: 'Durum sayfasına git',
   },
+  /** Sayfa kaynağında (Sayfa kaynağını görüntüle) görünen bildirim; ekranda gösterilmez. */
+  legal: {
+    owner: '{app} · © {year} {owner} ({ownerUrl}) · Kaynak kodu: {repoUrl}',
+    license:
+      'Bu yazılımın kodu MIT lisansıyla lisanslanmıştır. Kodu kullanan, kopyalayan, değiştiren ya da dağıtan herkes bu telif bildirimini ve MIT lisans metnini eksiksiz korumak zorundadır.',
+    violation:
+      'Bu koşula uyulmadan yapılan her kullanım lisans ve telif hakkı ihlalidir; hak sahibi 5846 sayılı Fikir ve Sanat Eserleri Kanunu ve uluslararası telif hukuku kapsamında hukuki yola başvurabilir.',
+    brand:
+      '“{app}” adı, logosu ve sitedeki içerikler MIT lisansı kapsamında değildir; tüm hakları saklıdır.',
+  },
 }
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> }

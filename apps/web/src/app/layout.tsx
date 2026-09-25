@@ -6,7 +6,7 @@ import '@fontsource/ibm-plex-mono/500.css'
 import './globals.css'
 
 import { getMessages } from '@havayolu/i18n'
-import { currentVersion } from '@havayolu/shared'
+import { currentVersion, PROJECT } from '@havayolu/shared'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
@@ -16,6 +16,7 @@ import { CONSENT_COOKIE, parseConsent } from '@/lib/consent'
 import { LanguageToggle } from '@/components/language-toggle'
 import { analyticsConfig, appName, getServerEnv } from '@/lib/env'
 import { getLocale } from '@/lib/locale'
+import { sourceNoticeComment } from '@/lib/source-notice'
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale()
@@ -23,6 +24,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { default: name, template: `%s · ${name}` },
     description: getMessages(locale).meta.description,
+    authors: [{ name: PROJECT.owner, url: PROJECT.ownerUrl }],
+    creator: PROJECT.owner,
+    other: { copyright: `© ${PROJECT.copyrightYear} ${PROJECT.owner} · ${PROJECT.license}` },
   }
 }
 
@@ -36,6 +40,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang={locale}>
       <body>
+        {/* Sayfa kaynağında görünen telif ve lisans bildirimi (ekranda gösterilmez). */}
+        <div hidden dangerouslySetInnerHTML={{ __html: sourceNoticeComment(appName(env)) }} />
+        <link rel="license" href={PROJECT.licenseUrl} />
         <header className="site-header">
           <Link href="/durum" className="brand">
             <span className="brand-mark" aria-hidden="true" />

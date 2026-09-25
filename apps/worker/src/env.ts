@@ -8,7 +8,8 @@ const emptyToUndefined = (value: unknown) =>
 const EnvSchema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  GIT_SHA: z.string().min(1).default('dev'),
+  // İmaja build sırasında gömülür ve Dokploy'a girilmez; boş gelirse açılışı engellemez, 'dev' olur.
+  GIT_SHA: z.preprocess(emptyToUndefined, z.string().min(1).default('dev')),
   WORKER_ROLE: z.preprocess(emptyToUndefined, z.string().default('all')),
   /** Admin panelinde görünen servis adı; üretimde worker-rt ya da worker-bg. */
   WORKER_SERVICE_NAME: z.preprocess(

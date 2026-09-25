@@ -8,7 +8,8 @@ const ServerEnvSchema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
   APP_NAME: z.preprocess(emptyToUndefined, z.string().trim().optional()),
   API_INTERNAL_URL: z.preprocess(emptyToUndefined, z.url().default('http://localhost:4100')),
-  GIT_SHA: z.string().min(1).default('dev'),
+  // İmaja build sırasında gömülür ve Dokploy'a girilmez; boş gelirse açılışı engellemez, 'dev' olur.
+  GIT_SHA: z.preprocess(emptyToUndefined, z.string().min(1).default('dev')),
   BUILD_TIME: z.preprocess(emptyToUndefined, z.string().optional()),
   ADMIN_HOST: z.preprocess(emptyToUndefined, z.string().trim().optional()),
   ANALYTICS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
