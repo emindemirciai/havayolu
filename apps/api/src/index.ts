@@ -1,4 +1,4 @@
-import { createDb, createRedis, pingDb, pingRedis, readHeartbeats, redisMemory } from '@ucus/db'
+import { createDb, createRedis, pingDb, pingRedis, readHeartbeats, redisMemory } from '@havayolu/db'
 import type { Redis } from 'ioredis'
 import { buildApp } from './app'
 import { RedisSessionStore } from './auth/session-store'
@@ -18,7 +18,7 @@ try {
 }
 
 const database = env.DATABASE_URL
-  ? createDb(env.DATABASE_URL, { max: 5, applicationName: 'ut-api' })
+  ? createDb(env.DATABASE_URL, { max: 5, applicationName: 'hy-api' })
   : null
 const redisQueue = env.REDIS_QUEUE_URL
   ? createRedis(env.REDIS_QUEUE_URL, { name: 'api-queue' })

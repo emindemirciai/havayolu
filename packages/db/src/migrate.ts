@@ -25,7 +25,7 @@ export async function runMigrations({
     max: 1,
     connect_timeout: 10,
     onnotice: () => undefined,
-    connection: { application_name: 'ucus-takip-migrate' },
+    connection: { application_name: 'havayolu-migrate' },
   })
   try {
     await sql`set lock_timeout = '5s'`

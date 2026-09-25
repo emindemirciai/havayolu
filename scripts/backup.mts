@@ -1,5 +1,5 @@
 // Temiz repo yedeği: yalnızca commit'li dosyalar (git archive), sürüm ve tarihle adlandırılır.
-// Varsayılan hedef: repo'nun yanındaki "ucus-takip-yedek" klasörü (BACKUP_DIR ile değiştirilebilir).
+// Varsayılan hedef: repo'nun yanındaki "havayolu-yedek" klasörü (BACKUP_DIR ile değiştirilebilir).
 // Commit'lenmemiş değişiklik varsa uyarır; o değişiklikler zip'e girmez.
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, statSync } from 'node:fs'
@@ -13,7 +13,7 @@ const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { ve
 const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
 const sha = git('rev-parse', '--short', 'HEAD')
 const branch = git('rev-parse', '--abbrev-ref', 'HEAD')
-const targetDir = resolve(process.env.BACKUP_DIR ?? join(root, '..', 'ucus-takip-yedek'))
+const targetDir = resolve(process.env.BACKUP_DIR ?? join(root, '..', 'havayolu-yedek'))
 mkdirSync(targetDir, { recursive: true })
 
 const dirty = git('status', '--porcelain')
@@ -27,8 +27,8 @@ if (dirty) {
   )
 }
 
-const file = join(targetDir, `ucus-takip-v${pkg.version}-${date}-${sha}.zip`)
-git('archive', '--format=zip', '--prefix=ucus-takip/', '-o', file, 'HEAD')
+const file = join(targetDir, `havayolu-v${pkg.version}-${date}-${sha}.zip`)
+git('archive', '--format=zip', '--prefix=havayolu/', '-o', file, 'HEAD')
 const sizeKb = Math.round(statSync(file).size / 1024)
 console.log(`✓ Yedek: ${file}`)
 console.log(

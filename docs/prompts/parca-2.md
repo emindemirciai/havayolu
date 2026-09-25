@@ -188,7 +188,7 @@ IST'de iniş bildiriminin hangi yoldan geleceğini `docs/reports/kapsama.md` bel
 - **Kabul:** M8a'daki kontrollerin aynısı bu uç noktalar için de geçer.
 
 ### M9 — Yedekleme ve üretim hazırlığı (`p2/m9-backup`)
-- **Yedekleme:** infra.md → "Yedekleme" bölümüne göre `ut-worker-bg` içinde kurulur: iz tabloları hariç günlük `pg_dump`, S3, `backup_runs` tablosu, heartbeat, yerel sınırlı yedek. `scripts/restore.sh` yazılır ve CI'da geri yükleme testi koşar.
+- **Yedekleme:** infra.md → "Yedekleme" bölümüne göre `hy-worker-bg` içinde kurulur: iz tabloları hariç günlük `pg_dump`, S3, `backup_runs` tablosu, heartbeat, yerel sınırlı yedek. `scripts/restore.sh` yazılır ve CI'da geri yükleme testi koşar.
 - **Hata takibi ve uyarılar:** `SENTRY_DSN` tanımlıysa hata takibi açılır. Uyarı job'ı ve heartbeat'ler infra.md → "Gözlem ve uyarı" bölümüne göre kurulur.
 - **Kabul:**
   - Yedekten temiz bir DB'ye geri yükleme CI'da geçer.

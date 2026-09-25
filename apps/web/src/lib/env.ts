@@ -29,10 +29,11 @@ export function getServerEnv(): ServerEnv {
   return result.data
 }
 
-export const CODE_NAME = 'ucus-takip'
+/** Marka adı (D-059). APP_NAME ile değiştirilebilir. */
+export const DEFAULT_APP_NAME = 'havayolu'
 
 export function appName(env: ServerEnv): string {
-  return env.APP_NAME && env.APP_NAME.length > 0 ? env.APP_NAME : CODE_NAME
+  return env.APP_NAME && env.APP_NAME.length > 0 ? env.APP_NAME : DEFAULT_APP_NAME
 }
 
 /** Analiz takip script'i yalnızca adres ve site kimliği birlikte tanımlıysa kullanılabilir. */

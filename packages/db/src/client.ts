@@ -13,7 +13,7 @@ export function createDb(databaseUrl: string, options: DbOptions = {}) {
     max: options.max ?? 5,
     idle_timeout: 30,
     connect_timeout: 5,
-    connection: { application_name: options.applicationName ?? 'ucus-takip' },
+    connection: { application_name: options.applicationName ?? 'havayolu' },
     onnotice: () => undefined,
   })
   return { sql, db: drizzle(sql) }

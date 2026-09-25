@@ -7,35 +7,35 @@ x-build-args: &build-args
   BUILD_TIME: ${BUILD_TIME:-}
 
 services:
-  ut-migrate:
+  hy-migrate:
     pull_policy: build
     build:
       context: .
       dockerfile: apps/worker/Dockerfile
       args: *build-args
 
-  ut-api:
+  hy-api:
     pull_policy: build
     build:
       context: .
       dockerfile: apps/api/Dockerfile
       args: *build-args
 
-  ut-web:
+  hy-web:
     pull_policy: build
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       args: *build-args
 
-  ut-worker-rt:
+  hy-worker-rt:
     pull_policy: build
     build:
       context: .
       dockerfile: apps/worker/Dockerfile
       args: *build-args
 
-  ut-worker-bg:
+  hy-worker-bg:
     pull_policy: build
     build:
       context: .

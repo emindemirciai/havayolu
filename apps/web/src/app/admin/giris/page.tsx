@@ -1,4 +1,4 @@
-import { getMessages } from '@ucus/i18n'
+import { getMessages } from '@havayolu/i18n'
 import type { Metadata } from 'next'
 import { getLocale } from '@/lib/locale'
 import { LoginForm } from './login-form'

@@ -2,21 +2,21 @@
 #   docker compose -f docker-compose.dev.yml up -d --wait --wait-timeout 300
 # Portlar bu makinedeki diğer projelerle çakışmasın diye 55xxx/56xxx/58xxx aralığındadır
 # (3000–3003 başka projenin). Değerler .env.example'daki geliştirme varsayılanlarıyla aynıdır.
-name: ucus-takip-dev
+name: havayolu-dev
 
 services:
   postgres:
     image: postgis/postgis:18-3.6
     environment:
-      POSTGRES_USER: ucus
-      POSTGRES_PASSWORD: ucus_dev_only
+      POSTGRES_USER: havayolu
+      POSTGRES_PASSWORD: havayolu_dev_only
       POSTGRES_DB: app_dev
     ports:
       - '127.0.0.1:55432:5432'
     volumes:
       - dev_pgdata:/var/lib/postgresql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ucus -d app_dev']
+      test: ['CMD-SHELL', 'pg_isready -U havayolu -d app_dev']
       interval: 3s
       timeout: 3s
       retries: 20

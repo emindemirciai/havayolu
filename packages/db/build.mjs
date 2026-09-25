@@ -1,4 +1,4 @@
-// ut-migrate için tek dosyalık, bağımlılıkları gömülü bir çalıştırılabilir üretir: dist/migrate.js.
+// hy-migrate için tek dosyalık, bağımlılıkları gömülü bir çalıştırılabilir üretir: dist/migrate.js.
 // Migration SQL'leri çalışma zamanında paketin drizzle/ klasöründen okunur.
 import { build } from 'esbuild'
 

@@ -5,14 +5,14 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
 ## Bellek bütçesi (limitler env'den değiştirilebilir)
 | Servis | Limit | Ayar |
 |---|---|---|
-| `ut-postgres` | 768 MB | `shared_buffers=192MB effective_cache_size=512MB work_mem=4MB maintenance_work_mem=64MB max_connections=40 max_parallel_workers_per_gather=0 wal_compression=on max_wal_size=1GB`, `shm_size: 128mb` |
-| `ut-redis-queue` | 256 MB | `maxmemory 128mb`, `maxmemory-policy noeviction`, `appendonly yes`, `appendfsync everysec` (AOF yeniden yazımında bellek 2 katına çıkabilir; limit ≥ 2 × maxmemory) |
-| `ut-redis-live` | 256 MB | `maxmemory 192mb`, `maxmemory-policy volatile-ttl`, `save ""`, `appendonly no` |
-| `ut-web` | 320 MB | `NODE_OPTIONS=--max-old-space-size=224` |
-| `ut-api` | 384 MB | `--max-old-space-size=270` |
-| `ut-worker-rt` | 384 MB | `WORKER_ROLE=ingest,engine`, `--max-old-space-size=270` |
-| `ut-worker-bg` | 256 MB | `WORKER_ROLE=notifier,jobs`, `--max-old-space-size=180`; yedek job'ı burada çalışır |
-| `ut-migrate` | 256 MB | tek seferlik, `restart: "no"` |
+| `hy-postgres` | 768 MB | `shared_buffers=192MB effective_cache_size=512MB work_mem=4MB maintenance_work_mem=64MB max_connections=40 max_parallel_workers_per_gather=0 wal_compression=on max_wal_size=1GB`, `shm_size: 128mb` |
+| `hy-redis-queue` | 256 MB | `maxmemory 128mb`, `maxmemory-policy noeviction`, `appendonly yes`, `appendfsync everysec` (AOF yeniden yazımında bellek 2 katına çıkabilir; limit ≥ 2 × maxmemory) |
+| `hy-redis-live` | 256 MB | `maxmemory 192mb`, `maxmemory-policy volatile-ttl`, `save ""`, `appendonly no` |
+| `hy-web` | 320 MB | `NODE_OPTIONS=--max-old-space-size=224` |
+| `hy-api` | 384 MB | `--max-old-space-size=270` |
+| `hy-worker-rt` | 384 MB | `WORKER_ROLE=ingest,engine`, `--max-old-space-size=270` |
+| `hy-worker-bg` | 256 MB | `WORKER_ROLE=notifier,jobs`, `--max-old-space-size=180`; yedek job'ı burada çalışır |
+| `hy-migrate` | 256 MB | tek seferlik, `restart: "no"` |
 
 - Kalıcı toplam 2.624 MB'tır (migrate hariç). Redis'te `maxmemory-policy noeviction` altında da TTL'li anahtarlar süresi dolunca silinir. BullMQ Worker bağlantıları `maxRetriesPerRequest: null` kullanır. api ve worker bağlantı havuzlarının toplamı ≤ 30'dur.
 - **KVM 4'e geçiş eşiği** (herhangi biri):
@@ -25,7 +25,7 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
 
 ## Compose kuralları
 - **`docker-compose.yml` (üretim):**
-  - Uygulama servisleri (`ut-web`, `ut-api`, `ut-worker-rt`, `ut-worker-bg`, `ut-migrate`) şunu kullanır: `image: ghcr.io/emindemirciai/ucus-takip-{web|api|worker}:${IMAGE_TAG:-main}` ve `pull_policy: always`.
+  - Uygulama servisleri (`hy-web`, `hy-api`, `hy-worker-rt`, `hy-worker-bg`, `hy-migrate`) şunu kullanır: `image: ghcr.io/emindemirciai/havayolu-{web|api|worker}:${IMAGE_TAG:-main}` ve `pull_policy: always`.
   - **Hiçbir serviste `build:` yoktur.** CI'daki `compose-guard` işi `docker compose -f docker-compose.yml config` çıktısında `build:` bulursa kırmızıya döner.
   - Owner her yerde küçük harfle yazılır; workflow'larda `github.repository_owner` küçük harfe çevrilir.
 - **Diğer compose dosyaları:**
@@ -33,18 +33,18 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
   - `docker-compose.dev.yml` altyapıyı sağlar: PostGIS, iki Redis, Mailpit, MinIO; yerel portları CLAUDE.md'dekilerdir. Uygulamalar yerelde `pnpm dev` ile çalışır.
 - **Adlar ve ağ:**
   - Servis adları `ut-` önekiyle projeye özgüdür; paylaşılan `dokploy-network`'te ad çakışması olmaz.
-  - **Traefik etiketi yazılmaz, `dokploy-network` tanımlanmaz.** Domain'ler Dokploy arayüzünden eklenir (`ut-web` → `WEB_HOST` port 3000, `ut-api` → `API_HOST` port 4000); etiketleri Dokploy ekler.
+  - **Traefik etiketi yazılmaz, `dokploy-network` tanımlanmaz.** Domain'ler Dokploy arayüzünden eklenir (`hy-web` → `WEB_HOST` port 3000, `hy-api` → `API_HOST` port 4000); etiketleri Dokploy ekler.
   - `ports` yerine `expose` kullanılır. Postgres ve Redis dışarı port açmaz.
 - **Env:**
   - Her uygulama servisi `env_file: [{path: .env, required: false}]` kullanır; eksik değişkeni zod açılışta yakalar. Böylece CI'daki `docker compose config` `.env` olmadan çalışır.
   - Dokploy Compose'da "Create env file" anahtarı açık kalır (v0.30.0+). `${VAR}` interpolasyonu yalnızca imaj etiketi ve limitler için kullanılır.
 - **Volume'lar:**
-  - `ut_pgdata:/var/lib/postgresql` bağlanır. PG 18+ imajında PGDATA `/var/lib/postgresql/18/docker`'dır; `/var/lib/postgresql/data` **kullanılmaz**.
-  - `ut_redisqueue` ayrı bir volume'dur.
+  - `hy_pgdata:/var/lib/postgresql` bağlanır. PG 18+ imajında PGDATA `/var/lib/postgresql/18/docker`'dır; `/var/lib/postgresql/data` **kullanılmaz**.
+  - `hy_redisqueue` ayrı bir volume'dur.
   - Repo içine göreli bind mount yapılmaz (Dokploy her deploy'da yeniden klonlar).
 - **Çalışma ayarları:**
   - Tüm servislerde `init: true`, `stop_grace_period: 30s` ve `restart: unless-stopped` (migrate hariç) bulunur.
-  - `depends_on` sağlık koşuluna bağlıdır. api, web ve worker'lar `ut-migrate`'e `condition: service_completed_successfully` ile bağlıdır.
+  - `depends_on` sağlık koşuluna bağlıdır. api, web ve worker'lar `hy-migrate`'e `condition: service_completed_successfully` ile bağlıdır.
   - Log rotasyonu tüm servislerde uygulanır (x-logging anchor): `json-file`, `max-size: 10m`, `max-file: 5`.
 - **Sağlık kontrolü:** `HEALTHCHECK` `node healthcheck.js` çalıştırır (curl'e bağımlı değildir); `--interval=5s --start-period=10s --retries=3`. CMD doğrudan `node …`'dır (`pnpm start` değil).
 
@@ -59,7 +59,7 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
 - **Ortama özgü değerler** build'e gömülmez. Web tarafı yapılandırmayı çalışma zamanında sunucudan okur; `NEXT_PUBLIC_*` kullanılmaz.
 
 ## Migration
-- **Kim çalıştırır:** Üretimde migration'ları yalnızca `ut-migrate` çalıştırır (worker imajı + `node packages/db/dist/migrate.js`). drizzle-orm'un programatik migrator'ı kullanılır; drizzle-kit üretim imajında yoktur.
+- **Kim çalıştırır:** Üretimde migration'ları yalnızca `hy-migrate` çalıştırır (worker imajı + `node packages/db/dist/migrate.js`). drizzle-orm'un programatik migrator'ı kullanılır; drizzle-kit üretim imajında yoktur.
 - **Güvenlik ayarları:** `pg_advisory_lock` alınır, `lock_timeout=5s` ve `statement_timeout=120s` uygulanır. Hata olursa sıfır olmayan kodla çıkılır ve deploy durur.
 - **İlk migration:** `packages/db`'nin ilk migration'ı `CREATE EXTENSION IF NOT EXISTS postgis;`'tir (Parça 1 M1a).
 - **Uyumluluk:** Migration'lar geriye uyumludur (expand → kodu yayınla → sonraki sürümde contract). Sütun silme ya da yeniden adlandırma tek deploy'da yapılmaz; yıkıcı migration DUR-SOR gerektirir.
@@ -147,13 +147,13 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
 
 ## Yedekleme (Parça 2 M9'da kurulur)
 - **Dokploy Compose Backups sekmesi bu projede kullanılmaz:** v0.30.7'de komutu sabittir (`pg_dump -Fc --no-acl --no-owner … | gzip`), tablo dışlayamaz ve yalnızca S3 hedefi kabul eder. Dokploy Volume Backup da çalışan Postgres için kullanılmaz.
-- **Günlük yedek** `ut-worker-bg` (`jobs` rolü) içinde, 02:30 UTC'de alınır:
+- **Günlük yedek** `hy-worker-bg` (`jobs` rolü) içinde, 02:30 UTC'de alınır:
   - komut: `pg_dump -Fc --exclude-table-data='track_points_*'`
   - hedef: Hostinger dışındaki S3 uyumlu depo (`BACKUP_S3_*`; Backblaze B2 ya da Cloudflare R2); en az 7 günlük + 4 haftalık kopya
   - sonuç `backup_runs` tablosuna yazılır (admin "yedek durumu" buradan okunur) ve `HEARTBEAT_URL_BACKUP`'a ping atılır
 - **İz tabloları yedeğe girmez.** v1'de iz verisi kaybı kabul edilir; partition arşivi yoktur.
 - **S3 tanımlı değilse:** yerelde en fazla 2 kopya tutulur. Disk %70'in üstündeyse yerel yedek yazılmaz ve admin panelinde kırmızı uyarı gösterilir.
-- **Geri yükleme:** `scripts/restore.sh` worker imajındadır ve `docker exec ut-worker-bg /app/scripts/restore.sh <dosya>` ile çalışır. CI'da geri yükleme testi koşar.
+- **Geri yükleme:** `scripts/restore.sh` worker imajındadır ve `docker exec hy-worker-bg /app/scripts/restore.sh <dosya>` ile çalışır. CI'da geri yükleme testi koşar.
 - **Hedefler:** RPO 24 saat (iz verisi hariç), RTO 1 saat. Ayda bir geri yükleme provası yapılır.
 - **Sırlar:** Yeniden üretilemeyen sırlar (VAPID özel anahtarı, JWT imza anahtarı, `ADMIN_SETUP_TOKEN`, Dokploy env dökümü) parola yöneticisinde tutulur. **VAPID anahtarı kaybolursa tüm web push abonelikleri geçersiz olur.**
 

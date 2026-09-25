@@ -22,12 +22,12 @@ function writeConsentCookie(value: ConsentValue, secure: boolean) {
 }
 
 function injectTracker(trackerUrl: string, siteId: string) {
-  if (document.querySelector('script[data-ut-analytics]')) return
+  if (document.querySelector('script[data-hy-analytics]')) return
   const script = document.createElement('script')
   script.src = trackerUrl
   script.defer = true
   script.dataset.site = siteId
-  script.dataset.utAnalytics = 'true'
+  script.dataset.hyAnalytics = 'true'
   document.head.appendChild(script)
 }
 
@@ -63,7 +63,7 @@ export function AnalyticsConsent({
       writeConsentCookie(value, secure)
       setOpen(false)
       // Önceden yüklenmiş script'i durdurmanın tek güvenli yolu sayfayı yenilemektir.
-      if (value === 'denied' && document.querySelector('script[data-ut-analytics]')) {
+      if (value === 'denied' && document.querySelector('script[data-hy-analytics]')) {
         window.location.reload()
         return
       }

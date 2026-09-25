@@ -3,7 +3,7 @@ import type { Redis } from 'ioredis'
 
 /** Panel oturum süresi. Analiz uygulaması token'ı 7 gün çerezde tutar ve her istekte doğrular. */
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7
-const KEY_PREFIX = 'ut:admin_session:'
+const KEY_PREFIX = 'hy:admin_session:'
 
 export type AdminRole = 'ADMIN'
 

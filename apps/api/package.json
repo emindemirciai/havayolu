@@ -1,5 +1,5 @@
 {
-  "name": "@ucus/api",
+  "name": "@havayolu/api",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
@@ -18,8 +18,8 @@
     "@fastify/helmet": "13.1.1",
     "@fastify/rate-limit": "11.2.0",
     "@fastify/swagger": "9.9.0",
-    "@ucus/db": "workspace:*",
-    "@ucus/shared": "workspace:*",
+    "@havayolu/db": "workspace:*",
+    "@havayolu/shared": "workspace:*",
     "fastify": "5.12.5",
     "ioredis": "6.0.0",
     "zod": "4.6.5"

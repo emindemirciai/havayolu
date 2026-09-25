@@ -26,10 +26,10 @@ Web sürümü (Parça 1–3) için zorunlu tek ek gider kalıcı domain'dir. İk
 ## Adımlar
 | Durum | Adım | Env / secret | Nerede | Neyi açar |
 |---|---|---|---|---|
-| [ ] | GitHub'da boş **özel** repo aç: `emindemirciai/ucus-takip` (README/lisans eklemeden) | — | github.com/new | İlk push |
+| [x] | GitHub'da boş **özel** repo: `emindemirciai/havayolu` (2026-09-25) | — | github.com | İlk push |
 | [ ] | `gh auth login` | — | Terminal | CI izleme, PR ve birleştirme |
-| [ ] | Geçici host'ları belirle: web, api, admin, analiz. Mevcut bir domain'in alt alanları (`ucus.`, `ucus-api.`, `ucus-admin.`, `ucus-analiz.`) ya da `*.sslip.io` | `WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYTICS_HOST` | DNS | İlk yayın |
-| [ ] | Kalıcı ad ve domain seçimi. **Dikkat:** domain sonradan değişirse web push aboneliklerinin ve ana ekrana eklenmiş uygulamaların yeniden kurulması gerekir; uygulama bağlantıları, Play'deki `/hesap-silme` adresi ve User-Agent da değişir. En geç kayıt açılmadan ve Play kapalı testinden önce seçilir | `APP_NAME`, host'lar | Domain firması | Kalıcı yayın |
+| [x] | DNS kayıtları (2026-09-25): A `@`, `api`, `admin`, `analiz` → `72.62.53.122` (TTL 60); CNAME `www` → `havayolu.live` (TTL 300). Hostinger DNS'inde girildi; yeni kayıtlı alan adı olduğu için dünya genelinde görünmesi birkaç saat sürebilir. Dokploy'da alan adı eklemeden önce `nslookup havayolu.live 1.1.1.1` ile doğrulanır | `WEB_HOST=havayolu.live`, `API_HOST=api.havayolu.live`, `ADMIN_HOST=admin.havayolu.live`, `ANALYTICS_URL=https://analiz.havayolu.live` | Hostinger DNS | Yayın |
+| [x] | Ad ve alan adı: **havayolu** · **havayolu.live** (kayıt 2026-09-25, bitiş 2027-09-25). Domain değişirse web push abonelikleri, ana ekran kurulumları, uygulama bağlantıları, Play'deki `/hesap-silme` adresi ve User-Agent değişir | `APP_NAME=havayolu` | — | Kalıcı yayın |
 | [ ] | İletişim e-postası (adsb.lol User-Agent'ı, yasal metinler) | `CONTACT_EMAIL` | — | Canlı veri (boşsa ingest başlamaz) |
 | [ ] | **Canlı ingest yayına çıkmadan önce** info@adsb.lol'e bilgilendirme e-postası: uygulamanın tanımı, istek bütçesi (0,1 istek/sn, tek VPS IP'si), User-Agent, ODbL uyum planı | — | E-posta | adsb.lol şartlarına uyum (Parça 1 M4) |
 | [ ] | **Erken:** Apple Developer Program (yıllık 99 $; kimlik doğrulaması günler sürebilir) | — | developer.apple.com | iOS build, TestFlight, iOS push |

@@ -46,7 +46,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
   - `GET /api/auth/me`: `{user: {email, role: "ADMIN"}}` döndürür.
   - Token opak ve rastgeledir, `redis-queue`'da hash'li saklanır, 7 gün geçerlidir ve iptal edilebilir. Token loglanmaz. Env yoksa giriş kapalıdır.
   - Kendi admin panelimiz de, senin analiz uygulaman (Siteni Analiz Et) da aynı yönetici hesabıyla giriş yapar.
-- **Admin host:** `ut-web`, `ADMIN_HOST` üzerinden gelen istekleri `/admin` altına yönlendirir (Next.js `proxy`); aynı konteyner, ayrı domain.
+- **Admin host:** `hy-web`, `ADMIN_HOST` üzerinden gelen istekleri `/admin` altına yönlendirir (Next.js `proxy`); aynı konteyner, ayrı domain.
   - Giriş formu yukarıdaki API sözleşmesini kullanır; token web tarafında httpOnly/Secure çerezde tutulur.
   - İlk admin sayfası **Servisler**'dir. Gösterilenler:
     - web, api
@@ -63,7 +63,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
   - Web, takip script'ini (`<script defer src="${ANALYTICS_URL}/api/tracker" data-site="${ANALYTICS_SITE_ID}">`) yalnızca `ANALYTICS_URL` ve `ANALYTICS_SITE_ID` tanımlıysa **ve kullanıcı analiz için onay verdiyse** yükler. Script `localStorage`'da kalıcı ziyaretçi kimliği tuttuğu için KVKK Çerez Rehberi gereği rıza aranır.
   - Onay bandı sade tutulur: "Kabul et" ve "Reddet" eşit ağırlıktadır; tercih `/gizlilik`'ten değiştirilebilir. Hukuki inceleme ACTIVATION'dadır.
   - CSP'ye analiz host'u `script-src` ve `connect-src` için eklenir.
-- **Docker dosyaları:** Dockerfile'lar, `docker-compose.yml` (üretim, yalnızca image), `docker-compose.build.yml`, `docker-compose.dev.yml` ve `ut-migrate`; tamamı infra.md'ye göre.
+- **Docker dosyaları:** Dockerfile'lar, `docker-compose.yml` (üretim, yalnızca image), `docker-compose.build.yml`, `docker-compose.dev.yml` ve `hy-migrate`; tamamı infra.md'ye göre.
 - **Kabul:**
   - `docker info` → `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --wait --wait-timeout 300` ile tüm servisler healthy olur.
   - `curl` ile `/ready` 200 döner ve `/api/version` doğru `GIT_SHA`'yı gösterir.
@@ -82,19 +82,19 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
 - **`docs/DEPLOY_DOKPLOY.md`** — kullanıcının **bir kez** izleyeceği adımlar, sırayla:
   1. **Dokploy:** ≥ v0.30.7'ye yükselt. Panele HTTPS domain bağla, 3000 portunu `ufw-docker` ile kapat (doğrulama: başka ağdan `curl -m 5 http://<IP>:3000` zaman aşımı). Let's Encrypt e-postasını gir.
   2. **Bellek:** `docker stats` ile mevcut kullanımı kontrol et; swap ve `vm.overcommit_memory` ayarlarını değerlendir (infra.md bütçesi).
-  3. **GitHub bağlantısı:** GitHub sağlayıcısını bağla. Compose servisi oluştur: repo `emindemirciai/ucus-takip`, dal `main`, dosya `./docker-compose.yml`.
+  3. **GitHub bağlantısı:** GitHub sağlayıcısını bağla. Compose servisi oluştur: repo `emindemirciai/havayolu`, dal `main`, dosya `./docker-compose.yml`.
      - **Autodeploy'u açıkça KAPAT** (varsayılanı açıktır).
      - Advanced → Isolated Deployments kapalı kalır.
      - "Create env file" açık kalır.
   4. **Registry:** `ghcr.io` + classic PAT (`read:packages`).
   5. **Environment:** `.env.example`'daki **bütün** üretim değişkenlerini gir; sonraki parçaların değişkenleri boş kalabilir. Sırları (`ADMIN_SETUP_TOKEN`, DB ve Redis parolaları) parola yöneticisinde üret; yalnızca `[A-Za-z0-9_-]` karakterlerini kullan.
   6. **Host'lar:** 4 host belirlenir: `WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYTICS_HOST`.
-     - Kalıcı domain yoksa mevcut bir domain'in alt alanları kullanılır (`ucus.`, `ucus-api.`, `ucus-admin.`, `ucus-analiz.`) ya da `*.sslip.io`.
+     - Değerler: `WEB_HOST=havayolu.live`, `API_HOST=api.havayolu.live`, `ADMIN_HOST=admin.havayolu.live`, analiz `analiz.havayolu.live`; ayrıca `www.havayolu.live` (web köke yönlendirir).
      - DNS A kayıtları VPS IP'sine yönlenir.
      - Cloudflare proxy kullanılırsa SSL modu "Full (Strict)" olur ve `EDGE_PROXY=cloudflare` girilir.
   7. **Domain'ler (Dokploy):**
-     - `ut-web` → `WEB_HOST` ve `ADMIN_HOST` (port 3000)
-     - `ut-api` → `API_HOST` (port 4000)
+     - `hy-web` → `havayolu.live`, `www.havayolu.live` ve `admin.havayolu.live` (port 3000)
+     - `hy-api` → `api.havayolu.live` (port 4000)
 
      Hepsinde HTTPS + Let's Encrypt açıktır. Domain değişikliğinden sonra yeniden deploy edilir.
   7b. **Analiz uygulaması:** Aynı Dokploy projesinde ikinci bir Compose uygulaması oluşturulur (kendi README'sindeki gibi): repo `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, servis `analyze`, port 3000, domain `ANALYTICS_HOST`. Env bloğu DEPLOY_DOKPLOY.md'de bu projenin değerleriyle hazır verilir:

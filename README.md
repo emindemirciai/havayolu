@@ -1,8 +1,8 @@
-# ucus-takip
+# havayolu
 
 **[Türkçe](#türkçe) · [English](#english)**
 
-![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.3.0-blue) ![lisans](https://img.shields.io/badge/lisans-MIT-green) ![durum](https://img.shields.io/badge/durum-geli%C5%9Ftirme-yellow)
+![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.3.1-blue) ![lisans](https://img.shields.io/badge/lisans-MIT-green) ![durum](https://img.shields.io/badge/durum-geli%C5%9Ftirme-yellow)
 
 ---
 
@@ -10,16 +10,17 @@
 
 Türkiye odaklı sivil havacılık uçuş takip platformu. Canlı harita, uçuş, uçak ve istasyon takibi sunar. Uçak istasyona yaklaşınca (varsayılan 10 km) ve indiğinde bildirim gönderir. Önce web (PWA) gelir, ardından iOS ve Android uygulaması (Expo).
 
-> Kod adı `ucus-takip`'tir. Uygulama adı ve domain henüz seçilmedi (bkz. `docs/DECISIONS.md` D-001).
+> **havayolu** · [havayolu.live](https://havayolu.live) — yönetim: `admin.havayolu.live`, API: `api.havayolu.live`, analiz: `analiz.havayolu.live` (yayın Parça 1 · M1b ile başlıyor).
 
 > **Bilinen sınır:** Kendi ADS-B alıcımız olmadığı için İstanbul Havalimanı'nda iniş anı çoğunlukla doğrudan görülmez. İniş bildirimi çoğu uçuşta "muhtemelen indi (tahmini saat)" olarak ve son sinyalden 1–1,5 dk sonra gelir. Bazı uçuşlarda yalnızca "iniş verisi alınamadı" denebilir.
 
-### Durum — v0.3.0
+### Durum — v0.3.1
 | Alan | Durum |
 |---|---|
 | Yol haritası, veri kaynakları, mimari | ✅ Hazır ve doğrulandı |
 | Yerel test ortamı, Durum ve Yenilikler sayfaları | ✅ Parça 1 · M0 |
 | Bütün servisler, yönetim paneli (Servisler ekranı), onaylı analiz | ✅ Parça 1 · M1a |
+| Marka ve alan adı: havayolu · havayolu.live (DNS kayıtları girildi) | ✅ v0.3.1 |
 | Otomatik yayın hattı (GitHub Actions → GHCR → Dokploy) | ⏳ Parça 1 · M1b |
 | Canlı harita ve arama | ⏳ Parça 1 · M6 |
 | 10 km ve iniş bildirimi (web push) | ⏳ Parça 2 · M4 |
@@ -50,22 +51,22 @@ pnpm dev
 - `docs/ACTIVATION.md`: elle yapılacak dış adımlar ve **maliyet özeti**
 - `docs/DECISIONS.md`: kararlar ve gerekçeleri
 
-### İstatistik (v0.3.0)
-Git'te 149 dosya, **8.306 satır**. Bunun 4.825 satırı kod (TypeScript, TSX, CSS, JS), 2.154 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
+### İstatistik (v0.3.1)
+Git'te 149 dosya, **8.400 satır**. Bunun 4.884 satırı kod (TypeScript, TSX, CSS, JS), 2.186 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
 
 | Alan | Satır |
 |---|---|
-| docs | 1.677 |
-| apps/web | 1.592 |
-| apps/api | 1.412 |
-| packages/shared | 487 |
+| docs | 1.685 |
+| apps/web | 1.629 |
+| apps/api | 1.417 |
+| packages/shared | 505 |
 | apps/worker | 391 |
-| packages/db | 371 |
-| packages/i18n | 342 |
+| packages/db | 372 |
+| packages/i18n | 340 |
 | scripts | 256 |
 | packages/providers | 197 |
 | packages/geo | 152 |
-| diğer (kök, .claude, .github) | 1.429 |
+| diğer (kök, .claude, .github) | 1.456 |
 
 ### Lisans, veri ve atıflar
 - Kod [MIT lisansı](LICENSE) ile lisanslanmıştır.
@@ -80,16 +81,17 @@ Git'te 149 dosya, **8.306 satır**. Bunun 4.825 satırı kod (TypeScript, TSX, C
 
 A Türkiye-focused civil aviation flight tracker. It offers a live map and lets you follow flights, aircraft and stations. You get an alert when an aircraft approaches a station (10 km by default) and when it lands. The web app (PWA) comes first, then iOS and Android apps (Expo).
 
-> The code name is `ucus-takip`. The product name and domain are not chosen yet (see `docs/DECISIONS.md` D-001).
+> **havayolu** · [havayolu.live](https://havayolu.live) — admin: `admin.havayolu.live`, API: `api.havayolu.live`, analytics: `analiz.havayolu.live` (going live with Part 1 · M1b).
 
 > **Known limitation:** Without our own ADS-B receiver, the moment of touchdown at Istanbul Airport is usually not observed directly. For most flights the landing alert says "probably landed (estimated time)" and arrives 1–1.5 minutes after the last signal. For some flights it can only say "landing data unavailable".
 
-### Status — v0.3.0
+### Status — v0.3.1
 | Area | Status |
 |---|---|
 | Roadmap, data sources, architecture | ✅ Done and verified |
 | Local test environment, Status and What's new pages | ✅ Part 1 · M0 |
 | All services, admin panel (Services screen), consent-based analytics | ✅ Part 1 · M1a |
+| Brand and domain: havayolu · havayolu.live (DNS records added) | ✅ v0.3.1 |
 | Automatic release pipeline (GitHub Actions → GHCR → Dokploy) | ⏳ Part 1 · M1b |
 | Live map and search | ⏳ Part 1 · M6 |
 | 10 km and landing alerts (web push) | ⏳ Part 2 · M4 |
@@ -120,8 +122,8 @@ Then open `http://localhost:3100/durum` and `http://localhost:3100/yenilikler`. 
 - `docs/ACTIVATION.md`: manual external steps and the **cost summary**
 - `docs/DECISIONS.md`: decisions and rationale
 
-### Stats (v0.3.0)
-149 files and **8,306 lines** in git: 4,825 lines of code (TypeScript, TSX, CSS, JS) and 2,154 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
+### Stats (v0.3.1)
+149 files and **8,400 lines** in git: 4,884 lines of code (TypeScript, TSX, CSS, JS) and 2,186 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
 
 ### License, data and attribution
 - Code is licensed under the [MIT License](LICENSE).

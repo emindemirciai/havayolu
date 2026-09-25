@@ -1,5 +1,5 @@
-import { format, getMessages, type Messages } from '@ucus/i18n'
-import type { Locale, ServiceStatus } from '@ucus/shared'
+import { format, getMessages, type Messages } from '@havayolu/i18n'
+import type { Locale, ServiceStatus } from '@havayolu/shared'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import Link from 'next/link'

@@ -1,13 +1,15 @@
-# ucus-takip — proje kuralları
+# havayolu — proje kuralları
 
 Bu dosya her oturumda otomatik yüklenir; yalnızca her zaman geçerli kuralları içerir. Ayrıntılar: `docs/spec/` (alan, veri kaynakları, altyapı), `.claude/rules/` (dizine özel kurallar), `docs/prompts/` (parça görevleri), `docs/REFERENCES.md` (doğrulanmış URL'ler).
 
 ## Değerler
-- **APP_NAME / DOMAIN:** henüz seçilmedi (kod adı `ucus-takip`). Koda gömülmez; env'den okunur.
-- **Host'lar:** web `https://${WEB_HOST}`, API ve WS `https://${API_HOST}` (ayrı env'ler; `api.` öneki türetilmez).
-  - Kalıcı domain seçilene kadar geçici host kullanılır: mevcut bir domain'in alt alanı (`ucus.<domain>` + `ucus-api.<domain>`) ya da `ucus.<ip-tireli>.sslip.io`.
-  - Geçici host'ta alınan web push abonelikleri ve PWA kurulumları kalıcı domain'e taşınmaz.
-- **GITHUB_REPO:** `emindemirciai/ucus-takip`. Repo **özel**, plan **GitHub Free**: dal koruması ve environment yok, CI ayda 2.000 dk. GHCR imaj adları küçük harflidir: `ghcr.io/emindemirciai/ucus-takip-{web,api,worker}`.
+- **Marka:** `havayolu` · **Domain:** `havayolu.live` (D-059). Ad `APP_NAME` env'inden okunur (varsayılan `havayolu`); alan adları koda gömülmez.
+- **Host'lar** (ayrı env'ler; `api.` öneki türetilmez):
+  - web `https://havayolu.live` (`WEB_HOST`); `www.havayolu.live` kalıcı yönlendirmeyle köke gider
+  - API ve WS `https://api.havayolu.live` (`API_HOST`)
+  - admin `https://admin.havayolu.live` (`ADMIN_HOST`)
+  - analiz `https://analiz.havayolu.live` (`ANALYTICS_URL`; kullanıcının Siteni Analiz Et uygulaması)
+- **GITHUB_REPO:** `emindemirciai/havayolu`. Repo **özel**, plan **GitHub Free**: dal koruması ve environment yok, CI ayda 2.000 dk. GHCR imaj adları küçük harflidir: `ghcr.io/emindemirciai/havayolu-{web,api,worker}`.
 - **Birincil istasyon:** IST (LTFM). Tohum istasyonlar: IST, SAW, ESB, ADB, AYT.
 - **URL şeması:**
   - canlı uçak `/?hex=<hex>`
@@ -25,10 +27,10 @@ Kullanıcı bir uçuşu (sefer no / çağrı kodu), bir uçağı (tescil / hex) 
 FR24 premium benzeri derinlik: canlı harita, uçuş detayı, grafikler, geçmiş oynatma, istasyon panosu. Varsayılan görünüm sadedir, "Uzman" görünüm ayrıntıyı açar. Arayüz TR önceliklidir, EN ikinci dildir. ADS-B'nin sınırları kullanıcıya dürüstçe söylenir (`docs/spec/domain.md` → "v1 sınırları").
 
 ## Mimari (gerekçesiz değiştirme → DUR-SOR + `docs/DECISIONS.md`)
-- **Monorepo:** pnpm workspaces + Turborepo, TypeScript `strict` + `noUncheckedIndexedAccess`, ESM. Paketler `@ucus/*` adını taşır.
+- **Monorepo:** pnpm workspaces + Turborepo, TypeScript `strict` + `noUncheckedIndexedAccess`, ESM. Paketler `@havayolu/*` adını taşır.
 - **`apps/web`:** Next.js App Router (`output: 'standalone'`), MapLibre GL JS, PWA + Web Push, admin paneli.
 - **`apps/api`:** Fastify, REST (OpenAPI) + WebSocket.
-- **`apps/worker`:** tek imaj, `WORKER_ROLE` ⊆ `ingest,engine,notifier,jobs`. Dizin düzeni sabittir: `apps/worker/src/{ingest,engine,notifier,jobs}/`. Üretimde iki servis vardır: `ut-worker-rt` (`ingest,engine`) ve `ut-worker-bg` (`notifier,jobs`).
+- **`apps/worker`:** tek imaj, `WORKER_ROLE` ⊆ `ingest,engine,notifier,jobs`. Dizin düzeni sabittir: `apps/worker/src/{ingest,engine,notifier,jobs}/`. Üretimde iki servis vardır: `hy-worker-rt` (`ingest,engine`) ve `hy-worker-bg` (`notifier,jobs`).
 - **`apps/mobile`:** Expo (development build, Expo Router), `@maplibre/maplibre-react-native`, expo-notifications, EAS.
 - **Veri:** PostgreSQL + PostGIS (Drizzle). İki Redis: `redis-queue` (BullMQ, kalıcı) ve `redis-live` (anlık durum, kalıcı değil).
 - **Paketler:**
@@ -70,7 +72,7 @@ FR24 premium benzeri derinlik: canlı harita, uçuş detayı, grafikler, geçmi�
 - **Ticari sağlayıcı entegrasyonu v1'de yoktur.** `ScheduleProvider` tip arayüzü Parça 1 M3'te tanımlanır; uygulaması Parça 5'tedir.
 
 ## DUR VE SOR — bu durumlarda çalışmayı durdur, kullanıcıya sor
-1. Kalıcı APP_NAME/DOMAIN gerektiren bir adım var ve değer boş: yasal metinler, mağaza, kalıcı push/PWA, SPF/DKIM. Geçici host yayın için yeterlidir.
+1. Marka ya da alan adını değiştirmek: web push abonelikleri, PWA kurulumları, derin bağlantılar ve mağaza kayıtları etkilenir.
 2. Bir sır, hesap ya da etkileşimli giriş gerekiyor: Dokploy, GHCR, SMTP, `gh`, EAS/Expo, Apple, Google, S3, Sentry.
    - **Değer uydurma.**
    - Sırları (VAPID, JWT, setup token) kullanıcı üretir; ajan üretim komutunu çalıştırmaz ve çıktısını görmez.
@@ -119,7 +121,7 @@ Sıra: 1–4 commit'ten önce yapılır ve aynı commit'e girer. 5 commit'ten so
 2. **README:** `README.md` Türkçe ve İngilizce bölümleriyle güncellenir: sürüm, özellik durumu, yerelde çalıştırma, satır sayısı.
 3. **Satır sayısı:** `pnpm stats` çalıştırılır (lockfile ve `docs/research/` hariç). Toplam ve dağılım kullanıcıya bildirilir.
 4. **Yerel test:** `pnpm dev` arka planda başlatılır ve uygulama tarayıcı önizlemesinde (`.claude/launch.json`) kullanıcıya gösterilir.
-5. **Yedek:** `pnpm backup` → `git archive` zip'i `C:\PROJELER\ucus-takip-yedek\ucus-takip-v<sürüm>-<tarih>.zip` olarak üretilir ve kullanıcıya gönderilir.
+5. **Yedek:** `pnpm backup` → `git archive` zip'i `C:\PROJELER\havayolu-yedek\havayolu-v<sürüm>-<tarih>.zip` olarak üretilir ve kullanıcıya gönderilir.
 6. **CI ve yayın:** CI yeşil ve Dokploy deploy'u hatasız olmalıdır. Kırmızıysa iş bitmiş sayılmaz.
 
 ## Kalite çıtası
@@ -145,7 +147,7 @@ Sıra: 1–4 commit'ten önce yapılır ve aynı commit'e girer. 5 commit'ten so
   - `docs/` Türkçedir.
 
 ## Geliştirici ortamı (Windows 11)
-- **Repo:** `C:\PROJELER\ucus-takip` (ASCII, boşluksuz). `core.longpaths true`. `.gitattributes` LF'yi zorlar ve doğru yazılmıştır; yeniden yazma (gitattributes `{a,b}` sözdizimini desteklemez).
+- **Repo:** `C:\PROJELER\havayolu` (ASCII, boşluksuz). `core.longpaths true`. `.gitattributes` LF'yi zorlar ve doğru yazılmıştır; yeniden yazma (gitattributes `{a,b}` sözdizimini desteklemez).
 - **Script'ler:** `pnpm-workspace.yaml` içinde `shellEmulator: true`. package.json script'lerinde `rm -rf`, `export`, `VAR=x cmd` ve tek tırnak yasaktır; karmaşık işler `scripts/*.mts` olarak yazılır. `.sh` dosyaları yalnızca Linux konteynerinde çalışır.
 - **Yerel portlar sabittir, env'den gelir.** Bu makinede 3000–3003 başka bir projenin konteynerlerindedir.
   - web 3100 · api 4100 · worker sağlık 4200
@@ -181,6 +183,6 @@ Sıra: 1–4 commit'ten önce yapılır ve aynı commit'e girer. 5 commit'ten so
 | `pnpm stats` | Satır sayısı |
 | `pnpm backup` | Temiz zip yedek |
 
-Yerel üretim denemesi: `docker compose -p ut-localprod -f docker-compose.yml -f docker-compose.build.yml --env-file .env.example up -d --build --wait --wait-timeout 300` (sonra aynı komutla `down -v`).
+Yerel üretim denemesi: `docker compose -p hy-localprod -f docker-compose.yml -f docker-compose.build.yml --env-file .env.example up -d --build --wait --wait-timeout 300` (sonra aynı komutla `down -v`).
 
 Sonraki kilometre taşları bu tabloya kendi komutlarını ekler: `dev:replay`, `test:e2e`, `db:migrate`, `db:seed`, `smoke:live`, `record`, `coverage:report`, `coverage:probe`.
