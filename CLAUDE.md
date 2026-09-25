@@ -121,7 +121,7 @@ Sıra: 1–4 commit'ten önce yapılır ve aynı commit'e girer. 5 commit'ten so
 2. **README:** `README.md` Türkçe ve İngilizce bölümleriyle güncellenir: sürüm, özellik durumu, yerelde çalıştırma, satır sayısı.
 3. **Satır sayısı:** `pnpm stats` çalıştırılır (lockfile ve `docs/research/` hariç). Toplam ve dağılım kullanıcıya bildirilir.
 4. **Yerel test:** `pnpm dev` arka planda başlatılır ve uygulama tarayıcı önizlemesinde (`.claude/launch.json`) kullanıcıya gösterilir.
-5. **Yedek:** `pnpm backup` → `git archive` zip'i `C:\PROJELER\havayolu-yedek\havayolu-v<sürüm>-<tarih>.zip` olarak üretilir ve kullanıcıya gönderilir.
+5. **Yedek:** `pnpm backup` → `git archive` zip'i masaüstünde `havayolu-yedek\havayolu-v<sürüm>-<tarih>-<commit>.zip` olarak üretilir ve kullanıcıya gönderilir (D-059).
 6. **CI ve yayın:** CI yeşil ve Dokploy deploy'u hatasız olmalıdır. Kırmızıysa iş bitmiş sayılmaz.
 
 ## Kalite çıtası

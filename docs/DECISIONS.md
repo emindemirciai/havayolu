@@ -5,7 +5,7 @@ Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en ü
 ## 2026-09-25 — Marka ve alan adı
 - **D-059 Marka `havayolu`, alan adı `havayolu.live` (kullanıcı kararı; D-001'in yerini alır).** Repo `emindemirciai/havayolu` (özel). Host'lar: `havayolu.live` (web; `www` köke 308 ile yönlenir), `api.havayolu.live`, `admin.havayolu.live`, `analiz.havayolu.live`.
   - Adlar: paket kapsamı `@havayolu/*`, GHCR imajları `ghcr.io/emindemirciai/havayolu-{web,api,worker}`, compose servis öneki `hy-`, Redis/çerez/olay öneki `hy`.
-  - Yerel klasör `C:PROJELERhavayolu`, yedek klasörü `C:PROJELERhavayolu-yedek`.
+  - Yerel klasör `C:\PROJELER\havayolu`. Yedek klasörü kullanıcı isteğiyle masaüstündedir (`<Masaüstü>\havayolu-yedek`); `pnpm backup` masaüstünün gerçek yolunu Windows'tan sorar, `BACKUP_DIR` ile değiştirilebilir.
   - Uçuş sayfası yolu `/ucus/<flightId>` markadan bağımsızdır (Türkçe "uçuş") ve kalır.
   - Tarihçe belgeleri (`docs/research/`, eski karar metinleri) eski kod adı `ucus-takip`'i korur.
 
