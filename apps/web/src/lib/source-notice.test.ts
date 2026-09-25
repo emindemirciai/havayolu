@@ -10,8 +10,12 @@ describe('sayfa kaynağı bildirimi', () => {
     expect(text).toContain('MIT lisansıyla')
     expect(text).toContain('MIT License')
     expect(text).toContain('5846')
-    expect(text).toContain('“havayolu” adı')
-    expect(text).toContain('The “havayolu” name')
+    expect(text).toContain('“havayolu” adı ve logosu')
+    expect(text).toContain('The “havayolu” name and logo')
+    // MIT'in tek şartı kopyalar ve önemli bölümler içindir; kullanım şarta bağlanmaz.
+    expect(text).toContain('tüm kopyaları ya da önemli bölümleri')
+    expect(text).toContain('All copies or substantial portions')
+    expect(text).not.toMatch(/kullanan|Anyone who uses|site content|sitedeki içerikler/)
   })
 
   it('geçerli ve kaçamayan tek bir HTML yorumu üretir', () => {

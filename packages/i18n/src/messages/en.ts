@@ -116,10 +116,10 @@ export const en: Messages = {
   legal: {
     owner: '{app} · © {year} {owner} ({ownerUrl}) · Source code: {repoUrl}',
     license:
-      'The code of this software is licensed under the MIT License. Anyone who uses, copies, modifies or distributes the code must keep this copyright notice and the MIT license text intact.',
+      'The code of this software is licensed under the MIT License. All copies or substantial portions of the code must include the copyright notice and the MIT license text (LICENSE).',
     violation:
-      'Any use that does not meet this condition infringes the license and the copyright; the copyright holder may take legal action under Turkish Law No. 5846 on Intellectual and Artistic Works and international copyright law.',
+      'Copying or distributing it without that notice and license text infringes the license and the copyright; the copyright holder may take legal action under Turkish Law No. 5846 on Intellectual and Artistic Works and international copyright law.',
     brand:
-      'The “{app}” name, logo and site content are not covered by the MIT License; all rights reserved.',
+      'The “{app}” name and logo are not covered by the MIT License; rights reserved. Third-party data keeps its own license.',
   },
 }

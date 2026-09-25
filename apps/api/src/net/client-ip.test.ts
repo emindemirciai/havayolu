@@ -31,7 +31,16 @@ describe('isCidr', () => {
     for (const ok of ['10.0.0.0/8', '172.16.0.0/12', '192.168.1.5', 'fc00::/7', '::1']) {
       expect(isCidr(ok), ok).toBe(true)
     }
-    for (const bad of ['10.0.0.0/33', 'fc00::/129', 'traefik', '10.0.0.0/8/1', '10.0.0.0/', '']) {
+    for (const bad of [
+      '10.0.0.0/33',
+      'fc00::/129',
+      '0.0.0.0/0',
+      '::/0',
+      'traefik',
+      '10.0.0.0/8/1',
+      '10.0.0.0/',
+      '',
+    ]) {
       expect(isCidr(bad), bad).toBe(false)
     }
   })
@@ -72,6 +81,17 @@ describe('hız sınırı istemci başına tutulur', () => {
       )
     }
     expect(codes.at(-1)).toBe(429)
+  })
+
+  it('aynı IPv6 /64 bloğundaki adresler tek ziyaretçi sayılır', async () => {
+    const app = await freshApp({ env: trusted })
+    const codes: number[] = []
+    for (let i = 1; i <= 6; i++) {
+      codes.push(await attempt(app, '10.0.0.5', { 'x-forwarded-for': `2001:db8:1:2::${i}` }))
+    }
+    expect(codes).toEqual([401, 401, 401, 401, 401, 429])
+    // Başka bir /64 bloğu ayrı sayaçtır.
+    expect(await attempt(app, '10.0.0.5', { 'x-forwarded-for': '2001:db8:1:3::1' })).toBe(401)
   })
 
   it('güvenilmeyen bir adresten gelen X-Forwarded-For yok sayılır', async () => {

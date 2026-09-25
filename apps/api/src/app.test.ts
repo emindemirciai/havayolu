@@ -124,6 +124,7 @@ describe('env', () => {
   it('geçersiz proxy ağı reddedilir; boş GIT_SHA açılışı engellemez', () => {
     expect(() => parseEnv({ TRUSTED_PROXY_CIDRS: '10.0.0.0/33' })).toThrow(/TRUSTED_PROXY_CIDRS/)
     expect(() => parseEnv({ TRUSTED_PROXY_CIDRS: 'traefik' })).toThrow(/TRUSTED_PROXY_CIDRS/)
+    expect(() => parseEnv({ TRUSTED_PROXY_CIDRS: '0.0.0.0/0' })).toThrow(/TRUSTED_PROXY_CIDRS/)
     expect(parseEnv({ GIT_SHA: '' }).GIT_SHA).toBe('dev')
     expect(parseEnv({ GIT_SHA: '  ' }).GIT_SHA).toBe('dev')
   })

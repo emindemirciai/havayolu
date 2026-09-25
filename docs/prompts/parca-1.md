@@ -56,7 +56,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
 
     Her birinin durumu, sürümü ve son kontrol zamanı listelenir.
 - **Analiz (kullanıcının kendi uygulaması: `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, MIT):**
-  - Bu projenin compose'una **girmez**. Kendi README'sindeki modele göre ayrı bir Dokploy Compose uygulaması olarak `ANALYZE_HOST`'ta çalışır. Env bloğu DEPLOY_DOKPLOY.md'de hazır verilir:
+  - Bu projenin compose'una **girmez**. Kendi README'sindeki modele göre ayrı bir Dokploy Compose uygulaması olarak `ANALYZE_HOST`'ta çalışır. Env bloğu `deploy/analiz.env.example`'da hazırdır (D-060):
     - `ANALYZE_AUTH_MODE=platform-admin`, `ANALYZE_AUTH_API_URL=https://${API_HOST}`
     - `ANALYZE_ALLOWED_ORIGINS=https://${WEB_HOST}`, `ANALYZE_EVENT_SITES=${WEB_HOST}`
     - `ANALYZE_GEO_LOOKUP=false`: açık kalırsa ziyaretçi IP'leri `ipwho.is` ve `ip-api.com`'a gider; ip-api'nin ücretsiz katmanı ticari kullanıma kapalıdır ve HTTP'dir. Konum yalnızca `cf-ipcountry` başlığından gelir.

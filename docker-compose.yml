@@ -151,7 +151,8 @@ services:
       API_PORT: '4000'
       WEB_INTERNAL_URL: http://hy-web:3000
       EXPECTED_WORKERS: worker-rt,worker-bg
-      # X-Forwarded-For'a yalnızca Docker'ın özel ağlarından (Traefik, hy-web) güvenilir (D-060).
+      # X-Forwarded-For'a yalnızca Docker'ın özel ağlarından güvenilir: Traefik, hy-web ve paylaşılan
+      # dokploy-network'teki diğer projelerin konteynerleri (kabul edilen sınır, D-060).
       TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
       NODE_OPTIONS: --max-old-space-size=270
     expose:

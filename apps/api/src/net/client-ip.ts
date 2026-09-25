@@ -30,7 +30,10 @@ export const CLOUDFLARE_CIDRS = [
   '2c0f:f248::/32',
 ] as const
 
-/** "adres" ya da "adres/önek" biçiminde geçerli bir IPv4/IPv6 ağı mı? */
+/**
+ * "adres" ya da "adres/önek" biçiminde geçerli bir IPv4/IPv6 ağı mı? /0 kabul edilmez: herkese
+ * güvenmek demektir ve Fastify'ın proxy-addr'ı açılışta reddeder.
+ */
 export function isCidr(value: string): boolean {
   const [address, prefix, extra] = value.split('/')
   if (extra !== undefined || !address) return false
@@ -38,7 +41,8 @@ export function isCidr(value: string): boolean {
   if (family === 0) return false
   if (prefix === undefined) return true
   if (!/^\d{1,3}$/.test(prefix)) return false
-  return Number(prefix) <= (family === 4 ? 32 : 128)
+  const bits = Number(prefix)
+  return bits >= 1 && bits <= (family === 4 ? 32 : 128)
 }
 
 function blockList(cidrs: readonly string[]): BlockList {

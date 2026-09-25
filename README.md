@@ -53,24 +53,24 @@ pnpm dev
 - `docs/DECISIONS.md`: kararlar ve gerekçeleri
 
 ### İstatistik (v0.3.2)
-Git'te 157 dosya, **9.140 satır**. Bunun 5.378 satırı kod (TypeScript, TSX, CSS, JS), 2.242 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
+Git'te 159 dosya, **9.269 satır**. Bunun 5.495 satırı kod (TypeScript, TSX, CSS, JS), 2.260 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
 
 | Alan | Satır |
 |---|---|
-| apps/web | 1.735 |
-| docs | 1.719 |
-| apps/api | 1.660 |
-| packages/shared | 541 |
-| apps/worker | 409 |
+| apps/web | 1.741 |
+| docs | 1.737 |
+| apps/api | 1.723 |
+| packages/shared | 582 |
+| apps/worker | 411 |
 | packages/db | 372 |
 | packages/i18n | 359 |
-| scripts | 328 |
+| scripts | 333 |
 | packages/providers | 197 |
 | packages/geo | 152 |
-| diğer (kök, deploy, .claude, .github) | 1.668 |
+| diğer (kök, deploy, .claude, .github) | 1.662 |
 
 ### Lisans, veri ve atıflar
-- Kod [MIT lisansı](LICENSE) ile lisanslanmıştır: © 2026 [emindemirciai](https://github.com/emindemirciai). Kodu kullanan herkes telif bildirimini ve lisans metnini korumak zorundadır; korumamak lisans ve telif hakkı ihlalidir. **havayolu** adı, logosu ve site içeriği MIT kapsamında değildir, tüm hakları saklıdır. Aynı bildirim sitenin sayfa kaynağında da yer alır.
+- Kod [MIT lisansı](LICENSE) ile lisanslanmıştır: © 2026 [emindemirciai](https://github.com/emindemirciai). Kodun tüm kopyaları ya da önemli bölümleri telif bildirimini ve lisans metnini içermek zorundadır; bunlar olmadan kopyalamak ya da dağıtmak lisans ve telif hakkı ihlalidir. **havayolu** adı ve logosu MIT kapsamında değildir, hakları saklıdır. Aynı bildirim sitenin sayfa kaynağında da yer alır.
 - Canlı uçuş verisi [ADSB.lol](https://adsb.lol)'den gelir ve [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) lisansına tabidir.
 - Harita: OpenFreeMap © OpenMapTiles, veriler © OpenStreetMap katkıcıları.
 - Havalimanları OurAirports'tan (kamu malı), havayolu ve rota verisi VRS standing-data'dan (CC0), hava durumu NOAA Aviation Weather Center'dan gelir.
@@ -125,10 +125,10 @@ Then open `http://localhost:3100/durum` and `http://localhost:3100/yenilikler`. 
 - `docs/DECISIONS.md`: decisions and rationale
 
 ### Stats (v0.3.2)
-157 files and **9,140 lines** in git: 5,378 lines of code (TypeScript, TSX, CSS, JS) and 2,242 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
+159 files and **9,269 lines** in git: 5,495 lines of code (TypeScript, TSX, CSS, JS) and 2,260 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
 
 ### License, data and attribution
-- Code is licensed under the [MIT License](LICENSE): © 2026 [emindemirciai](https://github.com/emindemirciai). Anyone using the code must keep the copyright notice and license text; failing to do so infringes the license and the copyright. The **havayolu** name, logo and site content are not covered by the MIT License; all rights reserved. The same notice appears in the page source of the site.
+- Code is licensed under the [MIT License](LICENSE): © 2026 [emindemirciai](https://github.com/emindemirciai). All copies or substantial portions of the code must include the copyright notice and license text; copying or distributing without them infringes the license and the copyright. The **havayolu** name and logo are not covered by the MIT License; rights reserved. The same notice appears in the page source of the site.
 - Live flight data comes from [ADSB.lol](https://adsb.lol) and is subject to [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 - Map: OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors.
 - Airports come from OurAirports (public domain), airlines and routes from VRS standing-data (CC0), weather from NOAA Aviation Weather Center.

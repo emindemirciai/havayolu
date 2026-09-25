@@ -115,11 +115,11 @@ export const tr = {
   legal: {
     owner: '{app} · © {year} {owner} ({ownerUrl}) · Kaynak kodu: {repoUrl}',
     license:
-      'Bu yazılımın kodu MIT lisansıyla lisanslanmıştır. Kodu kullanan, kopyalayan, değiştiren ya da dağıtan herkes bu telif bildirimini ve MIT lisans metnini eksiksiz korumak zorundadır.',
+      'Bu yazılımın kodu MIT lisansıyla lisanslanmıştır. Kodun tüm kopyaları ya da önemli bölümleri telif bildirimini ve MIT lisans metnini (LICENSE) içermek zorundadır.',
     violation:
-      'Bu koşula uyulmadan yapılan her kullanım lisans ve telif hakkı ihlalidir; hak sahibi 5846 sayılı Fikir ve Sanat Eserleri Kanunu ve uluslararası telif hukuku kapsamında hukuki yola başvurabilir.',
+      'Bu bildirim ve lisans metni olmadan kopyalamak ya da dağıtmak lisans ve telif hakkı ihlalidir; hak sahibi 5846 sayılı Fikir ve Sanat Eserleri Kanunu ve uluslararası telif hukuku kapsamında hukuki yola başvurabilir.',
     brand:
-      '“{app}” adı, logosu ve sitedeki içerikler MIT lisansı kapsamında değildir; tüm hakları saklıdır.',
+      '“{app}” adı ve logosu MIT lisansı kapsamında değildir, hakları saklıdır. Üçüncü taraf verileri kendi lisanslarına tabidir.',
   },
 }
 

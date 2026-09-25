@@ -1,6 +1,6 @@
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
-import rateLimit from '@fastify/rate-limit'
+import rateLimit, { normalizeIP } from '@fastify/rate-limit'
 import swagger from '@fastify/swagger'
 import { currentVersion } from '@havayolu/shared'
 import Fastify, { type FastifyInstance } from 'fastify'
@@ -64,7 +64,9 @@ export async function buildApp(env: Env, deps: AppDeps): Promise<FastifyInstance
     global: true,
     max: 300,
     timeWindow: '1 minute',
-    keyGenerator: (request) => clientIp(env.EDGE_PROXY, request),
+    // Özel anahtar üreticisinde eklentinin normalleştirmesi otomatik çalışmaz: IPv6 /64 bloğu tek
+    // ziyaretçi sayılır (blok içinde adres değiştirerek sınır aşılamaz), IPv4-mapped çözülür.
+    keyGenerator: (request) => normalizeIP(clientIp(env.EDGE_PROXY, request), 64),
     // Sayaç deposu (redis-queue) hata verirse istek reddedilmez; API Redis kesintisinde de ayakta kalır.
     skipOnError: true,
     ...(deps.rateLimitRedis ? { redis: deps.rateLimitRedis, nameSpace: 'hy:ratelimit:' } : {}),

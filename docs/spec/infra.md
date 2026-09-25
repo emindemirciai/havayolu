@@ -175,7 +175,8 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
   - Bitiş tarihi ACTIVATION'a yazılır.
 - **GHCR çekme kimliği:** classic PAT, yalnızca `read:packages` yetkisiyle.
 - **Proxy güveni ve istemci IP'si (D-060):**
-  - Fastify `trustProxy` yalnızca `TRUSTED_PROXY_CIDRS`'e güvenir. Üretimde zorunludur; compose boşsa Docker'ın özel ağlarını (`10.0.0.0/8,172.16.0.0/12,192.168.0.0/16`) verir. Bu güvenin ön koşulu hiçbir uygulama konteynerinin dışarıya port açmamasıdır (yalnızca Traefik).
+  - Fastify `trustProxy` yalnızca `TRUSTED_PROXY_CIDRS`'e güvenir. Üretimde zorunludur; compose boşsa Docker'ın özel ağlarını (`10.0.0.0/8,172.16.0.0/12,192.168.0.0/16`) verir. Bu güvenin ön koşulu hiçbir uygulama konteynerinin dışarıya port açmamasıdır (yalnızca Traefik). Kabul edilen sınır: Dokploy alan adı olan her servisi paylaşılan `dokploy-network`'e bağlar; VPS'teki diğer projelerin konteynerleri de güvenilen ağdadır ve hız sınırı anahtarını seçebilir (Traefik aynı alt ağda olduğu için IP ile ayırt edilemez).
+  - Anahtar, eklentinin normalleştirmesinden geçer: IPv6 adresleri /64 bloğa göre gruplanır (blok içinde adres değiştirerek sınır aşılamaz), IPv4-mapped adresler çözülür. `/0` ağı kabul edilmez.
   - Web sunucusu API'yi iç ağdan çağırırken ziyaretçinin `X-Forwarded-For` ve `CF-Connecting-IP` başlıklarını iletir; hız sınırı ziyaretçi başına tutulur.
   - Cloudflare önde ise (`EDGE_PROXY=cloudflare`) `CF-Connecting-IP`, yalnızca isteği ileten adres Cloudflare'in yayımlanmış ağlarındaysa kullanılır (liste `apps/api/src/net/client-ip.ts`'te). Sunucuya doğrudan gelen biri başlığı uyduramaz.
   - `/health`, `/version` ve `/openapi.json` hız sınırına girmez. Sayaç deposu (redis-queue) hata verirse sınır uygulanmaz, istek reddedilmez (`skipOnError`).

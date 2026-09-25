@@ -99,7 +99,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     }
     if (data.TRUSTED_PROXY_CIDRS.length === 0) {
       issues.push(
-        'TRUSTED_PROXY_CIDRS: üretimde zorunlu (Traefik ve iç ağ; ör. 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16)',
+        'TRUSTED_PROXY_CIDRS: üretimde zorunlu (Docker özel ağları; ör. 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16)',
       )
     }
   }

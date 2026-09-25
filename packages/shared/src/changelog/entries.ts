@@ -27,8 +27,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         en: 'The language switch now works in the admin panel.',
       },
       {
-        tr: 'Kaynak kodu herkese açık ve MIT lisanslı. Sayfa kaynağında sahiplik ve lisans bildirimi yer alıyor; havayolu adı ve içerikler lisans kapsamı dışında, tüm hakları saklı.',
-        en: 'The source code is public under the MIT License. The page source carries an ownership and license notice; the havayolu name and content are outside the license, all rights reserved.',
+        tr: 'Kaynak kodu herkese açık ve MIT lisanslı. Sayfa kaynağında sahiplik ve lisans bildirimi yer alıyor; havayolu adı ve logosu lisans kapsamı dışında, hakları saklı.',
+        en: 'The source code is public under the MIT License. The page source carries an ownership and license notice; the havayolu name and logo are outside the license, rights reserved.',
       },
     ],
   },
