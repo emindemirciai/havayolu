@@ -133,7 +133,7 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
   - `GET /api/admin/session`: `Authorization: Bearer <token>`. 200 = yetkili, 401/403 = değil. 404/405 dönerse panel `/api/auth/me`'ye geçer.
   - `GET /api/auth/me`: `{user: {email, role}}`; `role` `ADMIN` olmalıdır.
   - Panel token'ı 7 gün çerezde tutar ve her istekte doğrular. Bu yüzden token 7 gün geçerli, opak ve iptal edilebilirdir (`redis-queue`'da hash'li).
-- **Takip script'i:** `<script defer src="${ANALYTICS_URL}/api/tracker" data-site="${ANALYTICS_SITE_ID}">`. Script `localStorage` (kalıcı ziyaretçi kimliği) ve `sessionStorage` kullanır. Bu yüzden web onu **yalnızca kullanıcı onay verdikten sonra** yükler (KVKK Çerez Rehberi; hukuki inceleme ACTIVATION'da).
+- **Takip script'i:** `<script defer src="${ANALYZE_URL}/api/tracker" data-site="${ANALYZE_SITE_ID}">`. Script `localStorage` (kalıcı ziyaretçi kimliği) ve `sessionStorage` kullanır. Bu yüzden web onu **yalnızca kullanıcı onay verdikten sonra** yükler (KVKK Çerez Rehberi; hukuki inceleme ACTIVATION'da).
 - **Konum sorgusu:** `ANALYZE_GEO_LOOKUP=false` önerilir. Açıkken ziyaretçi IP'leri `ipwho.is` ve `ip-api.com`'a gönderilir; ip-api'nin ücretsiz katmanı ticari kullanıma kapalıdır ve HTTP kullanır.
 
 ## Gözlem ve uyarı (KVM 2'de Prometheus/Grafana çalıştırılmaz)

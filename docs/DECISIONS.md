@@ -3,6 +3,12 @@
 Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en üsttedir.
 
 ## 2026-09-25 — Birleştirme öncesi inceleme ve repo koruması (v0.3.2)
+- **D-063 Dokploy şablonunda boş alanlar `ANAHTAR=#talimat#` biçimindedir (kullanıcı talebi).** Docker Compose bu metni yorum değil değer olarak okur; `ANAHTAR= #talimat#` de aynıdır (Docker 29 ile ölçüldü). Yalnızca bir değerden sonra gelen `#` yorumdur. Bu yüzden:
+  - api, worker ve web `#…#` biçimindeki değeri tanımsız sayar (`packages/shared` → `withoutEnvPlaceholders`). "Boş bırak" satırları olduğu gibi kalabilir.
+  - Parolalar compose'da bağlantı adreslerine gömülür. Adreste `#` kalırsa (üretilen sırlarda `#` olmaz) API açılmayı reddeder ve hangi parolanın doldurulmadığını yazar.
+  - `compose:guard`, sır satırlarında `#…#` dışında değer bulunmadığını ve talimatların `$` içermediğini denetler.
+  - Bilinen sınır: Postgres parolası ilk açılışta volume'a yazılır; ilk deploy'dan önce girilmezse volume yeniden oluşturulmalıdır (veri yokken).
+- **D-062 Analiz env adları `ANALYZE_` önekiyle yazılır (kullanıcı kararı).** Kullanıcının diğer projelerinde `ANALYTICS_` adları hataya yol açtı; Siteni Analiz Et uygulamasının kendi değişkenleri de `ANALYZE_` önekli. Web ve API `ANALYZE_URL` ile `ANALYZE_SITE_ID`'yi okur (değer, analiz uygulamasının `ANALYZE_SITE_ID`'siyle aynıdır); belgelerdeki host adı `ANALYZE_HOST`'tur. Henüz yayın olmadığı için eski adlar için geçiş desteği tutulmaz.
 - **D-060 İstemci IP'si, hız sınırı ve üretim env sözleşmesi.** Çok ajanlı inceleme (4 açı + çürütmeye çalışan doğrulayıcılar) şunu gösterdi: web API'yi iç ağdan çağırdığı için bütün ziyaretçiler tek bir hız sayacına düşüyordu. Dakikada 5 yanlış giriş yöneticiyi kilitliyordu, ~150 `/durum` açılışı API'yi 429'a sokuyordu.
   - Web, ziyaretçinin `X-Forwarded-For` ve `CF-Connecting-IP` başlıklarını iletir. API yalnızca `TRUSTED_PROXY_CIDRS`'teki adreslerden gelen zincire güvenir; üretimde bu değişken zorunludur, compose boşsa Docker'ın özel ağlarını verir. Ön koşul: uygulama konteynerleri dışarıya port açmaz.
   - `CF-Connecting-IP` yalnızca isteği ileten adres Cloudflare'in yayımlanmış ağlarındaysa kullanılır (liste koda gömülü, kaynak cloudflare.com/ips). Alternatif (yalnızca `X-Forwarded-For`) Traefik'in Cloudflare'e güvenmesini gerektirirdi; Dokploy ayarına bağımlı olmamak için seçilmedi.
@@ -58,7 +64,7 @@ Yeniden yazılan prompt seti dört bağımsız inceleyiciden geçti: sadakat, tu
 - **D-029 Lisans: kod MIT (kullanıcı talebi).** Veri kendi lisansındadır: adsb.lol ODbL, OurAirports kamu malı, VRS CC0, OSM ODbL.
 - **D-030 Yerel portlar 3100/4100 vb.** Bu makinede 3000–3003 başka bir projenin konteynerlerinde. Konteyner içi üretim portları değişmez.
 - **D-031 adsb.lol hız bütçesi yarıya indi.** Başlangıç 0,1 istek/sn, üst sınır 0,2. Tazelik hedefleri: IST ≤ 20 sn, diğer istasyonlar ≤ 30 sn, Doğu ≤ 90 sn. Doğrulanan ölçüm "10 sn'de bir ya da daha yavaş" diyordu; önceki 0,2/0,5 değerleri bunun iki katıydı.
-- **D-032 Web ve API host'ları ayrı env'lerdir** (`WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYTICS_HOST`). `api.` öneki türetilmez. Kalıcı domain seçilene kadar geçici host kullanılır.
+- **D-032 Web ve API host'ları ayrı env'lerdir** (`WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYZE_HOST`). `api.` öneki türetilmez. Kalıcı domain seçilene kadar geçici host kullanılır.
 - **D-033 Dokploy secrets yokken deploy `DEPLOY_ENABLED` değişkeniyle atlanır.** İş özetine "YAYINLANMADI" yazılır (D-023'ün uygulaması).
 
 **Veritabanı ve yedekleme**

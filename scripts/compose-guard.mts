@@ -6,7 +6,7 @@
 // Üretim env şablonu (deploy/dokploy.env.example, D-060) için de:
 // - Compose'un okuduğu her ${DEĞİŞKEN} şablonda var; şablondaki her anahtar .env.example'da açıklanmış.
 // - Compose'un kendisinin verdiği ya da imaja gömülen anahtarlar şablonda yok.
-// - Sır değerleri boş; yerel değerler (_dev_only, localhost) yok.
+// - Sır değerleri boş ya da "#…#" talimatı (D-063); yerel değerler (_dev_only, localhost) yok.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -103,8 +103,13 @@ for (const [key, value] of template) {
   if (COMPOSE_OWNED.includes(key)) {
     problems.push(`${TEMPLATE}: ${key} compose ya da imaj tarafından verilir; şablona yazılmaz`)
   }
-  if (SECRET_KEY.test(key) && value !== '') {
-    problems.push(`${TEMPLATE}: ${key} bir sır; şablonda değeri boş olmalı`)
+  // "#…#" talimattır (D-063): uygulamalar tanımsız sayar; compose "$" işaretini yorumlayacağı için içeremez.
+  const placeholder = /^#.*#$/.test(value)
+  if (placeholder && value.includes('$')) {
+    problems.push(`${TEMPLATE}: ${key} talimatı "$" içeriyor (compose yorumlar)`)
+  }
+  if (SECRET_KEY.test(key) && value !== '' && !placeholder) {
+    problems.push(`${TEMPLATE}: ${key} bir sır; şablonda yalnızca #…# talimatı olabilir`)
   }
   if (/_dev_only|localhost|127\.0\.0\.1/.test(value)) {
     problems.push(`${TEMPLATE}: ${key} yerel geliştirme değeri içeriyor`)

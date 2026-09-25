@@ -52,15 +52,15 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
     - web, api
     - worker-rt, worker-bg (heartbeat yaşı)
     - Postgres, iki Redis (bellek kullanımı ve maxmemory)
-    - analiz uygulaması (`ANALYTICS_URL/api/health`)
+    - analiz uygulaması (`ANALYZE_URL/api/health`)
 
     Her birinin durumu, sürümü ve son kontrol zamanı listelenir.
 - **Analiz (kullanıcının kendi uygulaması: `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, MIT):**
-  - Bu projenin compose'una **girmez**. Kendi README'sindeki modele göre ayrı bir Dokploy Compose uygulaması olarak `ANALYTICS_HOST`'ta çalışır. Env bloğu DEPLOY_DOKPLOY.md'de hazır verilir:
+  - Bu projenin compose'una **girmez**. Kendi README'sindeki modele göre ayrı bir Dokploy Compose uygulaması olarak `ANALYZE_HOST`'ta çalışır. Env bloğu DEPLOY_DOKPLOY.md'de hazır verilir:
     - `ANALYZE_AUTH_MODE=platform-admin`, `ANALYZE_AUTH_API_URL=https://${API_HOST}`
     - `ANALYZE_ALLOWED_ORIGINS=https://${WEB_HOST}`, `ANALYZE_EVENT_SITES=${WEB_HOST}`
     - `ANALYZE_GEO_LOOKUP=false`: açık kalırsa ziyaretçi IP'leri `ipwho.is` ve `ip-api.com`'a gider; ip-api'nin ücretsiz katmanı ticari kullanıma kapalıdır ve HTTP'dir. Konum yalnızca `cf-ipcountry` başlığından gelir.
-  - Web, takip script'ini (`<script defer src="${ANALYTICS_URL}/api/tracker" data-site="${ANALYTICS_SITE_ID}">`) yalnızca `ANALYTICS_URL` ve `ANALYTICS_SITE_ID` tanımlıysa **ve kullanıcı analiz için onay verdiyse** yükler. Script `localStorage`'da kalıcı ziyaretçi kimliği tuttuğu için KVKK Çerez Rehberi gereği rıza aranır.
+  - Web, takip script'ini (`<script defer src="${ANALYZE_URL}/api/tracker" data-site="${ANALYZE_SITE_ID}">`) yalnızca `ANALYZE_URL` ve `ANALYZE_SITE_ID` tanımlıysa **ve kullanıcı analiz için onay verdiyse** yükler. Script `localStorage`'da kalıcı ziyaretçi kimliği tuttuğu için KVKK Çerez Rehberi gereği rıza aranır.
   - Onay bandı sade tutulur: "Kabul et" ve "Reddet" eşit ağırlıktadır; tercih `/gizlilik`'ten değiştirilebilir. Hukuki inceleme ACTIVATION'dadır.
   - CSP'ye analiz host'u `script-src` ve `connect-src` için eklenir.
 - **Docker dosyaları:** Dockerfile'lar, `docker-compose.yml` (üretim, yalnızca image), `docker-compose.build.yml`, `docker-compose.dev.yml` ve `hy-migrate`; tamamı infra.md'ye göre.
@@ -88,7 +88,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
      - "Create env file" açık kalır.
   4. **Registry:** `ghcr.io` + classic PAT (`read:packages`).
   5. **Environment:** `deploy/dokploy.env.example` bloğunu gir (sırları doldurarak); sonraki parçaların değişkenleri boş kalabilir. `.env.example` **olduğu gibi kopyalanmaz** (D-060): içindeki `*_dev_only` parolalar, localhost host'ları ve `EXTERNAL_PROVIDERS_DISABLED=true` yereldir. `GIT_SHA` ve `BUILD_TIME` imaja gömülür, Dokploy'a girilmez. Sırları (`ADMIN_SETUP_TOKEN`, DB ve Redis parolaları) parola yöneticisinde üret; yalnızca `[A-Za-z0-9_-]` karakterlerini kullan.
-  6. **Host'lar:** 4 host belirlenir: `WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYTICS_HOST`.
+  6. **Host'lar:** 4 host belirlenir: `WEB_HOST`, `API_HOST`, `ADMIN_HOST`, `ANALYZE_HOST`.
      - Değerler: `WEB_HOST=havayolu.live`, `API_HOST=api.havayolu.live`, `ADMIN_HOST=admin.havayolu.live`, analiz `analiz.havayolu.live`; ayrıca `www.havayolu.live` (web köke yönlendirir).
      - DNS A kayıtları VPS IP'sine yönlenir.
      - Cloudflare proxy kullanılırsa SSL modu "Full (Strict)" olur ve `EDGE_PROXY=cloudflare` girilir.
@@ -97,7 +97,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
      - `hy-api` → `api.havayolu.live` (port 4000)
 
      Hepsinde HTTPS + Let's Encrypt açıktır. Domain değişikliğinden sonra yeniden deploy edilir.
-  7b. **Analiz uygulaması:** Aynı Dokploy projesinde ikinci bir Compose uygulaması oluşturulur (kendi README'sindeki gibi): repo `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, servis `analyze`, port 3000, domain `ANALYTICS_HOST`. Env bloğu `deploy/analiz.env.example`'da bu projenin değerleriyle hazırdır:
+  7b. **Analiz uygulaması:** Aynı Dokploy projesinde ikinci bir Compose uygulaması oluşturulur (kendi README'sindeki gibi): repo `emindemirciai/Analyze.Your.Site-Siteni-Analiz-Et-`, servis `analyze`, port 3000, domain `ANALYZE_HOST`. Env bloğu `deploy/analiz.env.example`'da bu projenin değerleriyle hazırdır:
       - `ANALYZE_SITE_ID=${WEB_HOST}`
       - `ANALYZE_AUTH_MODE=platform-admin`, `ANALYZE_AUTH_API_URL=https://${API_HOST}`
       - `ANALYZE_ALLOWED_ORIGINS=https://${WEB_HOST}`, `ANALYZE_EVENT_SITES=${WEB_HOST}`
@@ -114,7 +114,7 @@ Her kilometre taşı ayrı bir dal ve PR'dır (CLAUDE.md → Git ve yayın). Pla
       - `curl ${API_URL}/version`
       - `${WEB_URL}/durum`
       - `${ADMIN_URL}` giriş ekranı ve Servisler paneli
-      - `${ANALYTICS_URL}/login` → yönetici hesabıyla giriş (platform-admin), `/api/health` 200
+      - `${ANALYZE_URL}/login` → yönetici hesabıyla giriş (platform-admin), `/api/health` 200
   12. **Not:** "Deploy sırasında birkaç saniyelik kesinti olur."
 - **DUR:** Kullanıcı DEPLOY_DOKPLOY.md adımlarını uygulayana kadar deploy `DEPLOY_ENABLED=false` ile temiz biçimde atlanır; CI yeşil kalır. Ajan Dokploy API'sini kendisi çağırmaz. Kilometre taşı `[k]` olur ve M2'ye geçilir.
 - **Kabul:**

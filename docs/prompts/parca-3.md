@@ -163,8 +163,8 @@ Tamamı `ADMIN_HOST` altındadır:
 ## M7 — Güvenlik ve performans (`p3/m7-hardening-web`)
 - **CSP ve güvenlik başlıkları:** Nonce tabanlı CSP uygulanır.
   - `worker-src`: MapLibre v6'da CSP paketi kaldırıldı; harita worker'ının nasıl yüklendiğini (blob: ya da modül dosyası) doğrula ve buna göre ayarla (`'self' blob:` gerekebilir).
-  - `connect-src`: `'self'`, `https://${API_HOST}`, `wss://${API_HOST}`, harita stil/karo/glif kaynakları, `${ANALYTICS_URL}` (onay verildiyse script'in olay gönderimi), `SENTRY_DSN` host'u (tanımlıysa).
-  - `script-src`: nonce, `${ANALYTICS_URL}` (tanımlıysa), `challenges.cloudflare.com` (`TURNSTILE_*` tanımlıysa; `frame-src` de).
+  - `connect-src`: `'self'`, `https://${API_HOST}`, `wss://${API_HOST}`, harita stil/karo/glif kaynakları, `${ANALYZE_URL}` (onay verildiyse script'in olay gönderimi), `SENTRY_DSN` host'u (tanımlıysa).
+  - `script-src`: nonce, `${ANALYZE_URL}` (tanımlıysa), `challenges.cloudflare.com` (`TURNSTILE_*` tanımlıysa; `frame-src` de).
   - `img-src`: `'self' data: blob:` ve harita kaynakları.
   - Push servis uç noktaları CSP'ye eklenmez; onlara yalnızca worker sunucudan çıkar.
 - **Performans:**

@@ -78,7 +78,7 @@ export default async function AdminServicesPage() {
   const t = getMessages(locale).admin
   const result = await fetchServices(token, await clientForwardHeaders())
   if (!result.ok && result.reason === 'unauthorized') redirect('/admin/giris')
-  const analyticsUrl = getServerEnv().ANALYTICS_URL
+  const analyticsUrl = getServerEnv().ANALYZE_URL
 
   return (
     <article className="page page-wide">

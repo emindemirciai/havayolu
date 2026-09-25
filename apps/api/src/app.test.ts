@@ -103,6 +103,24 @@ describe('env', () => {
     expect(prod.TRUSTED_PROXY_CIDRS).toEqual(['10.0.0.0/8', '172.16.0.0/12'])
   })
 
+  it('#…# talimatları tanımsız sayılır; doldurulmamış parola açılışı durdurur', () => {
+    const parsed = parseEnv({
+      EDGE_PROXY: '#boş bırak; Cloudflare açılırsa cloudflare yaz#',
+      ADMIN_EMAIL: '#yönetici e-postanı yaz#',
+      ADMIN_SETUP_TOKEN: '#parola üret (en az 32 karakter)#',
+      TRUSTED_PROXY_CIDRS: '10.0.0.0/8',
+    })
+    expect(parsed.EDGE_PROXY).toBeUndefined()
+    expect(parsed.ADMIN_EMAIL).toBeUndefined()
+    expect(parsed.ADMIN_SETUP_TOKEN).toBeUndefined()
+    expect(() =>
+      parseEnv({ DATABASE_URL: 'postgres://havayolu:#parola üret#@hy-postgres:5432/havayolu' }),
+    ).toThrow(/POSTGRES_PASSWORD doldurulmamış/)
+    expect(() =>
+      parseEnv({ REDIS_LIVE_URL: 'redis://:#parola üret#@hy-redis-live:6379/0' }),
+    ).toThrow(/REDIS_LIVE_PASSWORD doldurulmamış/)
+  })
+
   it('geçersiz proxy ağı reddedilir; boş GIT_SHA açılışı engellemez', () => {
     expect(() => parseEnv({ TRUSTED_PROXY_CIDRS: '10.0.0.0/33' })).toThrow(/TRUSTED_PROXY_CIDRS/)
     expect(() => parseEnv({ TRUSTED_PROXY_CIDRS: 'traefik' })).toThrow(/TRUSTED_PROXY_CIDRS/)

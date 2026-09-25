@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { withoutEnvPlaceholders } from '@havayolu/shared'
 import { z } from 'zod'
 
 const emptyToUndefined = (value: unknown) =>
@@ -39,7 +40,8 @@ export class EnvError extends Error {
 }
 
 export function parseEnv(source: NodeJS.ProcessEnv): Env {
-  const result = EnvSchema.safeParse(source)
+  // Şablondaki "#…#" talimatları tanımsız sayılır (D-063).
+  const result = EnvSchema.safeParse(withoutEnvPlaceholders(source))
   if (!result.success) {
     throw new EnvError(
       result.error.issues.map((i) => `${i.path.join('.') || '(kök)'}: ${i.message}`),

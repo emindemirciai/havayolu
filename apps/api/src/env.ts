@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { withoutEnvPlaceholders } from '@havayolu/shared'
 import { z } from 'zod'
 import { isCidr } from './net/client-ip'
 
@@ -32,7 +33,7 @@ const EnvSchema = z.object({
   WEB_HOST: optionalString,
   ADMIN_HOST: optionalString,
   WEB_INTERNAL_URL: z.preprocess(emptyToUndefined, z.url().default('http://localhost:3100')),
-  ANALYTICS_URL: optionalUrl,
+  ANALYZE_URL: optionalUrl,
   EXPECTED_WORKERS: z.preprocess(
     (value) => (value === undefined || value === '' ? 'worker-rt,worker-bg' : value),
     csv,
@@ -66,8 +67,25 @@ export class EnvError extends Error {
   }
 }
 
+/** Compose'un parolalardan kurduğu bağlantı adresleri ve parolanın geldiği değişken. */
+const PASSWORD_URLS = {
+  DATABASE_URL: 'POSTGRES_PASSWORD',
+  REDIS_QUEUE_URL: 'REDIS_QUEUE_PASSWORD',
+  REDIS_LIVE_URL: 'REDIS_LIVE_PASSWORD',
+} as const
+
 export function parseEnv(source: NodeJS.ProcessEnv): Env {
-  const result = EnvSchema.safeParse(source)
+  // Şablondaki "#parola üret#" gibi bir talimat doldurulmadan kalırsa compose onu parola olarak
+  // adrese yazar. Üretilen sırlar yalnızca [A-Za-z0-9_-] içerdiği için adreste "#" olamaz (D-063).
+  const unfilled = Object.entries(PASSWORD_URLS)
+    .filter(([key]) => source[key]?.includes('#'))
+    .map(
+      ([key, secret]) =>
+        `${key}: ${secret} doldurulmamış (#…# talimatı duruyor); parolayı üret ve gir`,
+    )
+  if (unfilled.length > 0) throw new EnvError(unfilled)
+
+  const result = EnvSchema.safeParse(withoutEnvPlaceholders(source))
   if (!result.success) {
     throw new EnvError(
       result.error.issues.map((i) => `${i.path.join('.') || '(kök)'}: ${i.message}`),

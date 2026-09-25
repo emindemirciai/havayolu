@@ -55,7 +55,7 @@ const app = await buildApp(env, {
     heartbeats: redisQueue ? () => readHeartbeats(redisQueue) : null,
     http: httpJson,
     webUrl: new URL('/api/version', env.WEB_INTERNAL_URL).toString(),
-    analyticsUrl: env.ANALYTICS_URL ? new URL('/api/health', env.ANALYTICS_URL).toString() : null,
+    analyticsUrl: env.ANALYZE_URL ? new URL('/api/health', env.ANALYZE_URL).toString() : null,
     expectedWorkers: env.EXPECTED_WORKERS,
     now: () => new Date(),
   },
