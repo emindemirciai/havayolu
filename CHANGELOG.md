@@ -8,6 +8,28 @@
 
 ---
 
+## v0.3.0 — 2026-09-25
+
+### Türkçe
+**Bütün servisler, yönetim paneli ve onaylı ziyaret analizi**
+
+- Uygulamanın bütün parçaları hazır: web, sunucu (API), iki arka plan çalışanı, veritabanı ve iki önbellek. Sunucuya tek seferde kurulacak şekilde paketlendi; aynı kurulum bilgisayarda birebir çalıştırılıp denendi.
+- Yönetim paneli: kendi alan adında açılır, yönetici girişiyle korunur. Servisler ekranı her servisin durumunu, sürümünü, gecikmesini, bellek kullanımını ve arka plan çalışanlarının son sinyalini gösterir.
+- Kendi analiz uygulamamız (Siteni Analiz Et) bağlandı; analiz paneline de aynı yönetici hesabıyla girilir.
+- Ziyaret istatistikleri yalnızca onay verirsen ölçülür. Kararını sayfanın altındaki “Analiz tercihleri” ile istediğin zaman değiştirebilirsin.
+- Güvenlik: güvenlik başlıkları, istek sınırları ve deneme sınırlı yönetici girişi. Oturum anahtarları sunucuda açık hâliyle tutulmaz.
+
+### English
+**All services, admin panel and consent-based visit analytics**
+
+- Every part of the app is ready: web, server (API), two background workers, the database and two caches. They are packaged to be set up on the server in one go, and the same setup was run and tested on a computer.
+- Admin panel: it opens on its own domain and is protected by admin sign-in. The Services screen shows the status, version, latency and memory use of each service, and the last signal from the background workers.
+- Our own analytics app (Siteni Analiz Et) is connected; its panel uses the same admin account.
+- Visit statistics are measured only if you consent. You can change your choice at any time with “Analytics preferences” at the bottom of the page.
+- Security: security headers, request limits and rate-limited admin sign-in. Session keys are never stored in plain form on the server.
+
+---
+
 ## v0.2.0 — 2026-09-25
 
 ### Türkçe

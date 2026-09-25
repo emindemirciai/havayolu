@@ -1,0 +1,215 @@
+# ucus-takip — üretim compose'u (Dokploy). Kurallar: docs/spec/infra.md
+# - Hiçbir serviste `build:` yoktur; imajlar GitHub Actions'ta derlenir ve GHCR'dan çekilir.
+# - Traefik etiketi yazılmaz, dokploy-network tanımlanmaz: domain'ler Dokploy arayüzünden eklenir
+#   (ut-web → WEB_HOST ve ADMIN_HOST port 3000, ut-api → API_HOST port 4000).
+# - Postgres ve Redis dışarıya port açmaz. Değişkenler Dokploy'un yazdığı .env dosyasından gelir.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
+x-app: &app
+  pull_policy: always
+  restart: unless-stopped
+  init: true
+  stop_grace_period: 30s
+  logging: *logging
+  env_file:
+    - path: .env
+      required: false
+
+x-db-urls: &db-urls
+  DATABASE_URL: postgres://${POSTGRES_USER:-ucus}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD gerekli}@ut-postgres:5432/${POSTGRES_DB:-ucus}
+  REDIS_QUEUE_URL: redis://:${REDIS_QUEUE_PASSWORD:?REDIS_QUEUE_PASSWORD gerekli}@ut-redis-queue:6379/0
+  REDIS_LIVE_URL: redis://:${REDIS_LIVE_PASSWORD:?REDIS_LIVE_PASSWORD gerekli}@ut-redis-live:6379/0
+
+services:
+  ut-postgres:
+    image: postgis/postgis:18-3.6
+    restart: unless-stopped
+    stop_grace_period: 60s
+    shm_size: 128mb
+    mem_limit: ${MEM_LIMIT_POSTGRES:-768m}
+    logging: *logging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ucus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD gerekli}
+      POSTGRES_DB: ${POSTGRES_DB:-ucus}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=192MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=40
+      - -c
+      - max_parallel_workers_per_gather=0
+      - -c
+      - wal_compression=on
+      - -c
+      - max_wal_size=1GB
+    # PG 18+ imajında PGDATA /var/lib/postgresql/18/docker'dır; volume üst dizine bağlanır.
+    volumes:
+      - ut_pgdata:/var/lib/postgresql
+    expose:
+      - '5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  ut-redis-queue:
+    image: redis:8.10.2-alpine
+    restart: unless-stopped
+    mem_limit: ${MEM_LIMIT_REDIS_QUEUE:-256m}
+    logging: *logging
+    environment:
+      REDISCLI_AUTH: ${REDIS_QUEUE_PASSWORD:?REDIS_QUEUE_PASSWORD gerekli}
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_QUEUE_PASSWORD:?REDIS_QUEUE_PASSWORD gerekli}
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - noeviction
+      - --appendonly
+      - 'yes'
+      - --appendfsync
+      - everysec
+    volumes:
+      - ut_redisqueue:/data
+    expose:
+      - '6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ut-redis-live:
+    image: redis:8.10.2-alpine
+    restart: unless-stopped
+    mem_limit: ${MEM_LIMIT_REDIS_LIVE:-256m}
+    logging: *logging
+    environment:
+      REDISCLI_AUTH: ${REDIS_LIVE_PASSWORD:?REDIS_LIVE_PASSWORD gerekli}
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_LIVE_PASSWORD:?REDIS_LIVE_PASSWORD gerekli}
+      - --maxmemory
+      - 192mb
+      - --maxmemory-policy
+      - volatile-ttl
+      - --save
+      - ''
+      - --appendonly
+      - 'no'
+    expose:
+      - '6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Tek seferlik: migration'ları advisory lock altında uygular ve çıkar. Hata = deploy durur.
+  ut-migrate:
+    <<: *app
+    image: ghcr.io/emindemirciai/ucus-takip-worker:${IMAGE_TAG:-main}
+    restart: 'no'
+    mem_limit: 256m
+    command: ['node', 'packages/db/dist/migrate.js']
+    environment:
+      <<: *db-urls
+    healthcheck:
+      disable: true
+    depends_on:
+      ut-postgres:
+        condition: service_healthy
+
+  ut-api:
+    <<: *app
+    image: ghcr.io/emindemirciai/ucus-takip-api:${IMAGE_TAG:-main}
+    mem_limit: ${MEM_LIMIT_API:-384m}
+    environment:
+      <<: *db-urls
+      APP_ENV: production
+      API_PORT: '4000'
+      WEB_INTERNAL_URL: http://ut-web:3000
+      NODE_OPTIONS: --max-old-space-size=270
+    expose:
+      - '4000'
+    depends_on:
+      ut-migrate:
+        condition: service_completed_successfully
+      ut-redis-queue:
+        condition: service_healthy
+      ut-redis-live:
+        condition: service_healthy
+
+  ut-web:
+    <<: *app
+    image: ghcr.io/emindemirciai/ucus-takip-web:${IMAGE_TAG:-main}
+    mem_limit: ${MEM_LIMIT_WEB:-320m}
+    environment:
+      APP_ENV: production
+      API_INTERNAL_URL: http://ut-api:4000
+      NODE_OPTIONS: --max-old-space-size=224
+    expose:
+      - '3000'
+    depends_on:
+      ut-migrate:
+        condition: service_completed_successfully
+
+  ut-worker-rt:
+    <<: *app
+    image: ghcr.io/emindemirciai/ucus-takip-worker:${IMAGE_TAG:-main}
+    mem_limit: ${MEM_LIMIT_WORKER_RT:-384m}
+    environment:
+      <<: *db-urls
+      APP_ENV: production
+      WORKER_ROLE: ingest,engine
+      WORKER_SERVICE_NAME: worker-rt
+      NODE_OPTIONS: --max-old-space-size=270
+    expose:
+      - '4200'
+    depends_on:
+      ut-migrate:
+        condition: service_completed_successfully
+      ut-redis-queue:
+        condition: service_healthy
+      ut-redis-live:
+        condition: service_healthy
+
+  ut-worker-bg:
+    <<: *app
+    image: ghcr.io/emindemirciai/ucus-takip-worker:${IMAGE_TAG:-main}
+    mem_limit: ${MEM_LIMIT_WORKER_BG:-256m}
+    environment:
+      <<: *db-urls
+      APP_ENV: production
+      WORKER_ROLE: notifier,jobs
+      WORKER_SERVICE_NAME: worker-bg
+      NODE_OPTIONS: --max-old-space-size=180
+    expose:
+      - '4200'
+    depends_on:
+      ut-migrate:
+        condition: service_completed_successfully
+      ut-redis-queue:
+        condition: service_healthy
+
+volumes:
+  ut_pgdata:
+  ut_redisqueue:

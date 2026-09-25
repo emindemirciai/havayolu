@@ -1,10 +1,6 @@
-// API'yi tek bir ESM dosyasına paketler. Çalışma zamanı npm bağımlılıkları dışarıda (external) kalır;
-// workspace paketleri (@ucus/*) TypeScript kaynaklarından pakete gömülür.
-import { readFileSync } from 'node:fs'
+// API'yi bağımlılıkları dahil tek bir ESM dosyasına paketler (dist/index.js). Üretim imajı böylece
+// node_modules taşımaz. CJS bağımlılıklar (fastify vb.) için `require` banner ile sağlanır.
 import { build } from 'esbuild'
-
-const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
-const external = Object.keys(pkg.dependencies ?? {}).filter((name) => !name.startsWith('@ucus/'))
 
 await build({
   entryPoints: ['src/index.ts'],
@@ -14,6 +10,9 @@ await build({
   format: 'esm',
   target: 'node24',
   sourcemap: true,
-  external,
+  legalComments: 'linked',
+  banner: {
+    js: "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
+  },
   logLevel: 'info',
 })

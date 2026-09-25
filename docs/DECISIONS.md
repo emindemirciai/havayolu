@@ -2,6 +2,16 @@
 
 Her karar tarih, gerekçe ve varsa alternatifiyle yazılır. En yeni karar en üsttedir.
 
+## 2026-09-25 — Parça 1 M1a uygulama kararları
+- **D-051 ioredis 6 RESP2 ile kullanılır (`protocol: 2`).** ioredis 6 varsayılan olarak RESP3'e geçti. BullMQ ve Lua script'leriyle yanıt biçimi öngörülebilir kalsın diye RESP2 seçildi.
+- **D-052 MinIO geliştirme compose'una eklenmedi.** MinIO artık Docker Hub'da imaj yayımlamıyor. S3 emülatörü yalnızca yedek testleri için gerekiyor; Parça 2 M9'da güncel bir alternatif seçilecek.
+- **D-053 Turbo `envMode: loose`.** Turbo 2'nin strict modu kabuktan verilen değişkenleri (ör. yerel `ADMIN_EMAIL`) geliştirme sunucularına aktarmıyordu. Önbellekli görevler (`build`) değişkenlerini zaten açıkça listeler.
+- **D-054 API, worker ve migrate tek dosyaya paketlenir (esbuild, bağımlılıklar dahil).** Üretim imajları `node_modules` taşımaz; imajlar 336–387 MB, boşta toplam bellek ~270 MB.
+- **D-055 `@ucus/db` = veri depoları paketi.** PostgreSQL (Drizzle) ile birlikte Redis istemci fabrikası ve worker heartbeat yardımcılarını da içerir.
+- **D-056 Yönetici oturumu:** opak rastgele token, Redis'te SHA-256 özetiyle, 7 gün geçerli. Web tarafında `ut_admin` çerezi httpOnly, SameSite=Strict ve yalnızca `/admin` yolunda gönderilir.
+- **D-057 Beklenen worker listesi env'den gelir** (`EXPECTED_WORKERS`; üretimde `worker-rt,worker-bg`). Heartbeat'i olmayan beklenen worker panelde "Çalışmıyor" görünür.
+- **D-058 Onay sabitleri ortak modüldedir (`lib/consent.ts`).** Next.js'te `'use client'` dosyasından sunucu bileşenine sabit import edilemez; değer yerine istemci referansı gelir.
+
 ## 2026-09-25 — Parça 1 M0 uygulama kararları
 - **D-046 turbo 2.11.3 ve vitest 5.0.1'e sabitlendi.** 2.11.4 ve 5.0.2 24 saatten yeniydi; pnpm bunları `minimumReleaseAgeExclude` istisnasıyla kurmak istedi. Tedarik zinciri korumasını delmek yerine bir önceki sürümler seçildi.
 - **D-047 API portu ortama göre varsayılır.** `API_PORT` boşsa üretimde 4000 (konteyner), yerelde 4100 kullanılır. Dinleme adresi `API_LISTEN_HOST`'tur; `API_HOST` genel alan adıdır.

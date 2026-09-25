@@ -2,22 +2,57 @@ import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 
+const emptyToUndefined = (value: unknown) =>
+  typeof value === 'string' && value.trim() === '' ? undefined : value
+const optionalString = z.preprocess(emptyToUndefined, z.string().trim().optional())
+const optionalUrl = z.preprocess(emptyToUndefined, z.url().optional())
+const csv = z.preprocess(
+  (value) =>
+    typeof value === 'string'
+      ? value
+          .split(',')
+          .map((part) => part.trim())
+          .filter(Boolean)
+      : [],
+  z.array(z.string()),
+)
+
 const EnvSchema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_LISTEN_HOST: z.string().min(1).default('0.0.0.0'),
-  API_PORT: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.coerce.number().int().min(1).max(65535).optional(),
-  ),
+  API_PORT: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(65535).optional()),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   GIT_SHA: z.string().min(1).default('dev'),
-  BUILD_TIME: z.string().optional(),
+  BUILD_TIME: optionalString,
+
+  DATABASE_URL: optionalUrl,
+  REDIS_QUEUE_URL: optionalUrl,
+  REDIS_LIVE_URL: optionalUrl,
+
+  WEB_HOST: optionalString,
+  ADMIN_HOST: optionalString,
+  WEB_INTERNAL_URL: z.preprocess(emptyToUndefined, z.url().default('http://localhost:3100')),
+  ANALYTICS_URL: optionalUrl,
+  EXPECTED_WORKERS: z.preprocess(
+    (value) => (value === undefined || value === '' ? 'worker-rt,worker-bg' : value),
+    csv,
+  ),
+
+  ADMIN_EMAIL: z.preprocess(emptyToUndefined, z.email().optional()),
+  ADMIN_SETUP_TOKEN: z.preprocess(
+    emptyToUndefined,
+    z.string().min(32, 'ADMIN_SETUP_TOKEN en az 32 karakter olmalı').optional(),
+  ),
+
+  TRUSTED_PROXY_CIDRS: csv,
+  EDGE_PROXY: z.preprocess(emptyToUndefined, z.enum(['cloudflare']).optional()),
 })
 
 /** Konteyner içi üretim portu 4000; yerel geliştirmede 4100 (3000–3003 bu makinede dolu). */
 export const DEFAULT_API_PORT = { production: 4000, local: 4100 } as const
 
-export type Env = Omit<z.infer<typeof EnvSchema>, 'API_PORT'> & { API_PORT: number }
+type ParsedEnv = z.infer<typeof EnvSchema>
+export type Env = Omit<ParsedEnv, 'API_PORT'> & { API_PORT: number }
 
 export class EnvError extends Error {
   constructor(issues: string[]) {
@@ -36,6 +71,16 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     )
   }
   const data = result.data
+  const issues: string[] = []
+  if (data.APP_ENV === 'production') {
+    for (const key of ['DATABASE_URL', 'REDIS_QUEUE_URL', 'REDIS_LIVE_URL'] as const) {
+      if (!data[key]) issues.push(`${key}: üretimde zorunlu`)
+    }
+  }
+  if (Boolean(data.ADMIN_EMAIL) !== Boolean(data.ADMIN_SETUP_TOKEN)) {
+    issues.push('ADMIN_EMAIL ve ADMIN_SETUP_TOKEN birlikte tanımlanmalı (ya da ikisi de boş)')
+  }
+  if (issues.length > 0) throw new EnvError(issues)
   const fallbackPort =
     data.APP_ENV === 'production' ? DEFAULT_API_PORT.production : DEFAULT_API_PORT.local
   return { ...data, API_PORT: data.API_PORT ?? fallbackPort }

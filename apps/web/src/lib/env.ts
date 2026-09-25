@@ -1,12 +1,18 @@
 import 'server-only'
 import { z } from 'zod'
 
+const emptyToUndefined = (value: unknown) =>
+  typeof value === 'string' && value.trim() === '' ? undefined : value
+
 const ServerEnvSchema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  APP_NAME: z.string().trim().optional(),
-  API_INTERNAL_URL: z.url().default('http://localhost:4100'),
+  APP_NAME: z.preprocess(emptyToUndefined, z.string().trim().optional()),
+  API_INTERNAL_URL: z.preprocess(emptyToUndefined, z.url().default('http://localhost:4100')),
   GIT_SHA: z.string().min(1).default('dev'),
-  BUILD_TIME: z.string().optional(),
+  BUILD_TIME: z.preprocess(emptyToUndefined, z.string().optional()),
+  ADMIN_HOST: z.preprocess(emptyToUndefined, z.string().trim().optional()),
+  ANALYTICS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
+  ANALYTICS_SITE_ID: z.preprocess(emptyToUndefined, z.string().trim().optional()),
 })
 
 export type ServerEnv = z.infer<typeof ServerEnvSchema>
@@ -27,4 +33,13 @@ export const CODE_NAME = 'ucus-takip'
 
 export function appName(env: ServerEnv): string {
   return env.APP_NAME && env.APP_NAME.length > 0 ? env.APP_NAME : CODE_NAME
+}
+
+/** Analiz takip script'i yalnızca adres ve site kimliği birlikte tanımlıysa kullanılabilir. */
+export function analyticsConfig(env: ServerEnv): { trackerUrl: string; siteId: string } | null {
+  if (!env.ANALYTICS_URL || !env.ANALYTICS_SITE_ID) return null
+  return {
+    trackerUrl: new URL('/api/tracker', env.ANALYTICS_URL).toString(),
+    siteId: env.ANALYTICS_SITE_ID,
+  }
 }

@@ -1,9 +1,12 @@
+import { createDb, createRedis, pingDb, pingRedis, readHeartbeats, redisMemory } from '@ucus/db'
+import type { Redis } from 'ioredis'
 import { buildApp } from './app'
-import { EnvError, loadDotEnvForDevelopment, parseEnv } from './env'
+import { RedisSessionStore } from './auth/session-store'
+import { EnvError, loadDotEnvForDevelopment, parseEnv, type Env } from './env'
 
 loadDotEnvForDevelopment()
 
-let env
+let env: Env
 try {
   env = parseEnv(process.env)
 } catch (error) {
@@ -14,12 +17,64 @@ try {
   throw error
 }
 
-const app = buildApp(env)
+const database = env.DATABASE_URL
+  ? createDb(env.DATABASE_URL, { max: 5, applicationName: 'ut-api' })
+  : null
+const redisQueue = env.REDIS_QUEUE_URL
+  ? createRedis(env.REDIS_QUEUE_URL, { name: 'api-queue' })
+  : null
+const redisLive = env.REDIS_LIVE_URL ? createRedis(env.REDIS_LIVE_URL, { name: 'api-live' }) : null
+
+const redisProbe = (redis: Redis | null) =>
+  redis
+    ? async () => {
+        const latencyMs = await pingRedis(redis)
+        return { latencyMs, ...(await redisMemory(redis)) }
+      }
+    : null
+
+async function httpJson(url: string) {
+  const started = performance.now()
+  const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(2_000) })
+  const body: unknown = await response.json().catch(() => null)
+  return { status: response.status, body, latencyMs: Math.round(performance.now() - started) }
+}
+
+const app = await buildApp(env, {
+  // redis-queue yoksa yönetici oturumu tutulamaz: giriş kapalı kalır.
+  sessionStore: redisQueue ? new RedisSessionStore(redisQueue) : null,
+  readiness: {
+    postgres: database ? () => pingDb(database.sql) : null,
+    redisQueue: redisQueue ? () => pingRedis(redisQueue) : null,
+    redisLive: redisLive ? () => pingRedis(redisLive) : null,
+  },
+  probes: {
+    postgres: database ? async () => ({ latencyMs: await pingDb(database.sql) }) : null,
+    redisQueue: redisProbe(redisQueue),
+    redisLive: redisProbe(redisLive),
+    heartbeats: redisQueue ? () => readHeartbeats(redisQueue) : null,
+    http: httpJson,
+    webUrl: new URL('/api/version', env.WEB_INTERNAL_URL).toString(),
+    analyticsUrl: env.ANALYTICS_URL ? new URL('/api/health', env.ANALYTICS_URL).toString() : null,
+    expectedWorkers: env.EXPECTED_WORKERS,
+    now: () => new Date(),
+  },
+  rateLimitRedis: redisQueue,
+})
+
+if (!env.ADMIN_EMAIL || !redisQueue) {
+  app.log.warn('yönetici girişi kapalı: ADMIN_EMAIL/ADMIN_SETUP_TOKEN ya da REDIS_QUEUE_URL eksik')
+}
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'kapanıyor')
   try {
     await app.close()
+    await Promise.allSettled([
+      database?.sql.end({ timeout: 5 }),
+      redisQueue?.quit(),
+      redisLive?.quit(),
+    ])
     process.exit(0)
   } catch (error) {
     app.log.error(error, 'kapanış sırasında hata')

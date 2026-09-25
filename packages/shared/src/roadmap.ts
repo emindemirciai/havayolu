@@ -32,7 +32,7 @@ export const ROADMAP: readonly Milestone[] = [
   {
     id: 'p1-m1a',
     part: '1',
-    status: 'planned',
+    status: 'done',
     title: {
       tr: 'Bütün servisler, yönetici girişi ve Servisler paneli',
       en: 'All services, admin sign-in and Services panel',
