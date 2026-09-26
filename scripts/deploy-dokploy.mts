@@ -1,11 +1,15 @@
 // Dokploy'a yayın ve doğrulama (docs/spec/infra.md → Deploy sözleşmesi, D-064). CI'daki release
 // ve rollback işleri çalıştırır; yerelde çalıştırılmaz (canlı çağrı, CLAUDE.md DUR-SOR 6).
+// 0. (release) Canlıdaki sürümden bu commit'e yalnızca docs/ ya da apps/mobile/ değiştiyse yayın
+//    gerekmez: imajlar aynıdır, gereksiz kesinti yaşanmaz.
 // 1. Mevcut deployment kimlikleri kaydedilir.
 // 2. compose.deploy ile yayın kuyruğa alınır. Gövde yalnızca composeId ve title taşır;
 //    freshVolumes (volume'ları siler) ASLA gönderilmez, compose.redeploy kullanılmaz.
 // 3. Listede ilk görünen yeni deployment 10 sn arayla en fazla 15 dk izlenir (kuyrukta bekleme dahil).
+//    Ağ hatası, 5xx ve 429 geçici sayılır; süre dolana kadar beklenir.
 // 4. API /version ve web /api/version yeni GIT_SHA'yı, API /ready 200'ü verene kadar yoklanır.
-// Çıkış: 0 = yayınlandı ya da bilerek atlandı, 1 = başarısız.
+// Çıkış: 0 = yayınlandı, gerekmedi ya da bilerek atlandı; 1 = başarısız.
+import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
@@ -18,6 +22,8 @@ export interface DeployConfig {
   /** Beklenen GIT_SHA: tam SHA ya da en az 7 karakterlik başı (rollback). */
   expectedSha: string
   title: string
+  /** true: canlı sürümden bu yana yalnızca yayına girmeyen yollar değiştiyse Dokploy tetiklenmez. */
+  skipUnchanged: boolean
   pollIntervalMs: number
   deployTimeoutMs: number
   verifyTimeoutMs: number
@@ -32,6 +38,8 @@ export interface DeployDeps {
   fetch: typeof fetch
   clock: Clock
   log: (line: string) => void
+  /** İki commit arasında değişen dosyalar; bilinmiyorsa (commit yok, git hatası) null. */
+  changedFiles: (from: string, to: string) => string[] | null
 }
 
 export interface Deployment {
@@ -51,9 +59,20 @@ export const DEFAULT_TIMING = {
   verifyTimeoutMs: 15 * 60_000,
 } as const
 
+/** Yayına girmeyen yollar (ci.yml'deki eski changes filtresiyle aynı: belge ve mobil uygulama). */
+export const NON_DEPLOY_PREFIXES = ['docs/', 'apps/mobile/'] as const
+
 const REQUEST_TIMEOUT_MS = 15_000
 
-class DeployError extends Error {}
+class DeployError extends Error {
+  /** Geçici (ağ, zaman aşımı, 5xx, 429): beklemeye devam edilebilir. */
+  constructor(
+    message: string,
+    readonly transient = false,
+  ) {
+    super(message)
+  }
+}
 
 const trimSlash = (url: string) => url.replace(/\/+$/, '')
 
@@ -66,6 +85,10 @@ export function shaMatches(actual: unknown, expected: string): boolean {
   return shorter >= 7 && (a.startsWith(e) || e.startsWith(a))
 }
 
+export function isNonDeployPath(file: string): boolean {
+  return NON_DEPLOY_PREFIXES.some((prefix) => file.startsWith(prefix))
+}
+
 async function dokploy(
   config: DeployConfig,
   deps: DeployDeps,
@@ -73,9 +96,10 @@ async function dokploy(
   init: { method: 'GET' | 'POST'; body?: string },
 ): Promise<unknown> {
   const url = `${trimSlash(config.dokployUrl)}/api/${path}`
-  let response: Response
+  let status: number
+  let text: string
   try {
-    response = await deps.fetch(url, {
+    const response = await deps.fetch(url, {
       method: init.method,
       headers: {
         'x-api-key': config.apiToken,
@@ -85,12 +109,14 @@ async function dokploy(
       ...(init.body ? { body: init.body } : {}),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
+    status = response.status
+    text = await response.text()
   } catch (error) {
-    throw new DeployError(`Dokploy'a ulaşılamadı (${path}): ${(error as Error).message}`)
+    throw new DeployError(`Dokploy'a ulaşılamadı (${path}): ${(error as Error).name}`, true)
   }
-  const text = await response.text()
-  if (!response.ok) {
-    throw new DeployError(`Dokploy ${path} → HTTP ${response.status}: ${text.slice(0, 200)}`)
+  if (status < 200 || status >= 300) {
+    const transient = status >= 500 || status === 429
+    throw new DeployError(`Dokploy ${path} → HTTP ${status}: ${text.slice(0, 200)}`, transient)
   }
   try {
     return text ? (JSON.parse(text) as unknown) : null
@@ -124,8 +150,15 @@ async function waitForDeployment(
   const deadline = deps.clock.now() + config.deployTimeoutMs
   let lastState = ''
   for (;;) {
-    const fresh = (await listDeployments(config, deps)).find((d) => !before.has(d.deploymentId))
-    const state = fresh ? `${fresh.deploymentId}: ${fresh.status}` : 'kuyrukta (henüz kayıt yok)'
+    let state: string
+    let fresh: Deployment | undefined
+    try {
+      fresh = (await listDeployments(config, deps)).find((d) => !before.has(d.deploymentId))
+      state = fresh ? `${fresh.deploymentId}: ${fresh.status}` : 'kuyrukta (henüz kayıt yok)'
+    } catch (error) {
+      if (!(error instanceof DeployError) || !error.transient) throw error
+      state = `geçici hata, bekleniyor (${error.message})`
+    }
     if (state !== lastState) {
       deps.log(`deployment ${state}`)
       lastState = state
@@ -166,6 +199,21 @@ function gitShaOf(body: unknown): unknown {
   return typeof body === 'object' && body !== null ? (body as { gitSha?: unknown }).gitSha : null
 }
 
+/** API ve web aynı gerçek commit'i gösteriyorsa onu döndürür; aksi hâlde (ulaşılamıyor, "dev") null. */
+async function liveSha(config: DeployConfig, deps: DeployDeps): Promise<string | null> {
+  const shas: string[] = []
+  for (const url of [
+    `${trimSlash(config.apiUrl)}/version`,
+    `${trimSlash(config.webUrl)}/api/version`,
+  ]) {
+    const result = await probe(deps, url)
+    const sha = result.reached && result.status === 200 ? gitShaOf(result.body) : null
+    if (typeof sha !== 'string' || !/^[0-9a-f]{7,40}$/i.test(sha)) return null
+    shas.push(sha.toLowerCase())
+  }
+  return shas[0] === shas[1] ? (shas[0] ?? null) : null
+}
+
 async function verifyRelease(config: DeployConfig, deps: DeployDeps): Promise<void> {
   const deadline = deps.clock.now() + config.verifyTimeoutMs
   const targets = [
@@ -201,9 +249,25 @@ async function verifyRelease(config: DeployConfig, deps: DeployDeps): Promise<vo
   }
 }
 
+/** Yayın gerekmiyorsa özet metnini döndürür; gerekiyorsa null. */
+async function unchangedSummary(config: DeployConfig, deps: DeployDeps): Promise<string | null> {
+  if (!config.skipUnchanged) return null
+  const live = await liveSha(config, deps)
+  if (!live) return null
+  const target = config.expectedSha.slice(0, 7)
+  if (shaMatches(live, config.expectedSha)) {
+    return `YAYIN GEREKMEDİ: ${target} zaten canlıda.`
+  }
+  const files = deps.changedFiles(live, config.expectedSha)
+  if (files === null || !files.every(isNonDeployPath)) return null
+  return `YAYIN GEREKMEDİ: canlıdaki ${live.slice(0, 7)} ile ${target} arasında yalnızca belge ya da mobil uygulama değişti; imajlar aynı.`
+}
+
 export async function runDeploy(config: DeployConfig, deps: DeployDeps): Promise<DeployResult> {
   const started = deps.clock.now()
   try {
+    const unchanged = await unchangedSummary(config, deps)
+    if (unchanged) return { ok: true, summary: unchanged }
     const before = new Set((await listDeployments(config, deps)).map((d) => d.deploymentId))
     deps.log(`mevcut deployment sayısı: ${before.size}; yayın kuyruğa alınıyor (${config.title})`)
     await dokploy(config, deps, 'compose.deploy', {
@@ -263,6 +327,13 @@ export function planFromEnv(env: Record<string, string | undefined>): Plan {
       return { kind: 'error', summary: `YAYIN BAŞARISIZ: ${key} https:// ile başlamalı` }
     }
   }
+  // Başlık değeri doğrulanır ama hiçbir mesaja yazılmaz.
+  if (!/^[\x21-\x7e]+$/.test(value('DOKPLOY_API_TOKEN'))) {
+    return {
+      kind: 'error',
+      summary: 'YAYIN BAŞARISIZ: DOKPLOY_API_TOKEN yazdırılabilir tek satırlık bir değer olmalı',
+    }
+  }
   if (!/^[0-9a-f]{7,40}$/i.test(value('EXPECTED_SHA'))) {
     return {
       kind: 'error',
@@ -280,6 +351,7 @@ export function planFromEnv(env: Record<string, string | undefined>): Plan {
       webUrl: value('WEB_URL'),
       expectedSha: value('EXPECTED_SHA'),
       title: env.DEPLOY_TITLE?.trim() || `gh-${sha7}-${env.GITHUB_RUN_ID ?? 'yerel'}`,
+      skipUnchanged: env.SKIP_UNCHANGED === 'true',
       ...DEFAULT_TIMING,
     },
   }
@@ -288,6 +360,19 @@ export function planFromEnv(env: Record<string, string | undefined>): Plan {
 const realClock: Clock = {
   now: () => Date.now(),
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+}
+
+/** git diff; commit bilinmiyorsa ya da git hata verirse null (o zaman yayın yapılır). */
+function gitChangedFiles(from: string, to: string): string[] | null {
+  try {
+    const output = execFileSync('git', ['diff', '--name-only', from, to], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+    return output.split('\n').filter(Boolean)
+  } catch {
+    return null
+  }
 }
 
 function writeSummary(summary: string): void {
@@ -306,6 +391,7 @@ async function main(): Promise<number> {
     fetch: globalThis.fetch,
     clock: realClock,
     log: (line) => console.log(line),
+    changedFiles: gitChangedFiles,
   })
   console.log(result.summary)
   writeSummary(result.summary)

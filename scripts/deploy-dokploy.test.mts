@@ -5,11 +5,13 @@ import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   deployRequestBody,
+  isNonDeployPath,
   planFromEnv,
   runDeploy,
   shaMatches,
   type Clock,
   type DeployConfig,
+  type DeployDeps,
   type Deployment,
 } from './deploy-dokploy.mts'
 
@@ -22,10 +24,11 @@ interface Scenario {
   appearAfterPolls: number
   /** Yeni deployment'ın sırayla alacağı durumlar; son durum kalıcıdır. */
   statuses: string[]
-  /** Yayından kaç doğrulama turu sonra /version yeni SHA'yı döndürür (Infinity = hiç). */
+  /** Deployment "done" olduktan kaç /version sorgusu sonra yeni SHA döner (Infinity = hiç). */
   shaAfterProbes: number
   readyStatus: number
-  listStatus?: number
+  /** compose.deploy'dan sonraki ilk N liste sorgusu bu durumla yanıtlanır (geçici hata). */
+  listErrorAfterDeploy?: { status: number; count: number }
 }
 
 interface Recorded {
@@ -56,9 +59,10 @@ async function startStub(scenario: Scenario) {
     { deploymentId: 'eski-1', status: 'done', title: 'önceki', createdAt: '2026-09-25T10:00:00Z' },
   ]
   let deployed = false
-  let pollsSinceDeploy = 0
-  let statusIndex = 0
-  let versionProbes = 0
+  let listCallsSinceDeploy = 0
+  let pollsShowingNew = 0
+  let doneServed = false
+  let probesAfterDone = 0
 
   const server = createServer((req, res) => {
     let body = ''
@@ -73,12 +77,16 @@ async function startStub(scenario: Scenario) {
         if (req.headers['x-api-key'] !== TOKEN) return json(401, { message: 'Unauthorized' })
       }
       if (url.pathname === '/api/deployment.allByCompose') {
-        if (scenario.listStatus) return json(scenario.listStatus, { message: 'hata' })
         if (!deployed) return json(200, existing)
-        pollsSinceDeploy += 1
-        if (pollsSinceDeploy <= scenario.appearAfterPolls) return json(200, existing)
-        const status = scenario.statuses[Math.min(statusIndex, scenario.statuses.length - 1)]
-        statusIndex += 1
+        listCallsSinceDeploy += 1
+        const failure = scenario.listErrorAfterDeploy
+        if (failure && listCallsSinceDeploy <= failure.count) {
+          return json(failure.status, { message: 'geçici' })
+        }
+        if (listCallsSinceDeploy <= scenario.appearAfterPolls) return json(200, existing)
+        const status = scenario.statuses[Math.min(pollsShowingNew, scenario.statuses.length - 1)]
+        pollsShowingNew += 1
+        if (status === 'done') doneServed = true
         return json(200, [
           { deploymentId: 'yeni-1', status, title: 'commit mesajı', errorMessage: null },
           ...existing,
@@ -89,8 +97,8 @@ async function startStub(scenario: Scenario) {
         return json(200, { success: true, message: 'Deployment queued', composeId: 'cmp-1' })
       }
       if (url.pathname === '/version' || url.pathname === '/api/version') {
-        if (url.pathname === '/version') versionProbes += 1
-        const gitSha = versionProbes > scenario.shaAfterProbes ? NEW_SHA : OLD_SHA
+        if (url.pathname === '/version' && doneServed) probesAfterDone += 1
+        const gitSha = doneServed && probesAfterDone > scenario.shaAfterProbes ? NEW_SHA : OLD_SHA
         return json(200, { app: 'havayolu', version: '0.4.0', gitSha })
       }
       if (url.pathname === '/ready') return json(scenario.readyStatus, { status: 'x' })
@@ -112,6 +120,7 @@ function configFor(base: string, overrides: Partial<DeployConfig> = {}): DeployC
     webUrl: base,
     expectedSha: NEW_SHA,
     title: 'gh-1234567-99',
+    skipUnchanged: false,
     pollIntervalMs: 10_000,
     deployTimeoutMs: 15 * 60_000,
     verifyTimeoutMs: 15 * 60_000,
@@ -119,7 +128,11 @@ function configFor(base: string, overrides: Partial<DeployConfig> = {}): DeployC
   }
 }
 
-async function deploy(scenario: Scenario, overrides: Partial<DeployConfig> = {}) {
+async function deploy(
+  scenario: Scenario,
+  overrides: Partial<DeployConfig> = {},
+  changedFiles: DeployDeps['changedFiles'] = () => ['apps/api/src/app.ts'],
+) {
   const stub = await startStub(scenario)
   const clock = new FakeClock()
   const lines: string[] = []
@@ -127,8 +140,10 @@ async function deploy(scenario: Scenario, overrides: Partial<DeployConfig> = {})
     fetch: globalThis.fetch,
     clock,
     log: (line) => lines.push(line),
+    changedFiles,
   })
-  return { result, requests: stub.requests, clock, lines }
+  const posts = stub.requests.filter((r) => r.method === 'POST')
+  return { result, requests: stub.requests, posts, clock, lines }
 }
 
 const happy: Scenario = {
@@ -140,10 +155,9 @@ const happy: Scenario = {
 
 describe('deploy-dokploy', () => {
   it('başarılı yayında 0 döner; compose.deploy gövdesi yalnızca composeId ve title taşır', async () => {
-    const { result, requests, lines } = await deploy(happy)
+    const { result, requests, posts, lines } = await deploy(happy)
     expect(result.ok).toBe(true)
     expect(result.summary).toMatch(/^YAYINLANDI: 1234567/)
-    const posts = requests.filter((r) => r.method === 'POST')
     expect(posts.map((r) => r.path)).toEqual(['/api/compose.deploy'])
     for (const post of posts) {
       expect(JSON.parse(post.body)).toEqual({ composeId: 'cmp-1', title: 'gh-1234567-99' })
@@ -163,6 +177,36 @@ describe('deploy-dokploy', () => {
   it('kuyrukta bekleme süresine izin verir (yeni kayıt geç görünse de başarılı)', async () => {
     const { result } = await deploy({ ...happy, appearAfterPolls: 12 })
     expect(result.ok).toBe(true)
+  })
+
+  it('beklerken gelen geçici Dokploy hataları (502, 429) yayını düşürmez', async () => {
+    for (const status of [502, 429]) {
+      const { result, lines } = await deploy({
+        ...happy,
+        listErrorAfterDeploy: { status, count: 3 },
+      })
+      expect(result.ok, `HTTP ${status}`).toBe(true)
+      expect(lines.join('\n')).toMatch(/geçici hata, bekleniyor/)
+    }
+  })
+
+  it('geçici hata 15 dk sürerse → 1 ve son hata yazılır', async () => {
+    const { result } = await deploy({
+      ...happy,
+      listErrorAfterDeploy: { status: 502, count: Number.POSITIVE_INFINITY },
+    })
+    expect(result.ok).toBe(false)
+    expect(result.summary).toMatch(/15 dk içinde bitmedi.*HTTP 502/)
+  })
+
+  it('beklerken yetki hatası (403) hemen → 1', async () => {
+    const { result, clock } = await deploy({
+      ...happy,
+      listErrorAfterDeploy: { status: 403, count: Number.POSITIVE_INFINITY },
+    })
+    expect(result.ok).toBe(false)
+    expect(result.summary).toMatch(/HTTP 403/)
+    expect(clock.current).toBe(0)
   })
 
   it('deployment error → 1', async () => {
@@ -197,16 +241,55 @@ describe('deploy-dokploy', () => {
     expect(result.summary).toMatch(/API \/ready: HTTP 503/)
   })
 
-  it('Dokploy yetkisiz (401) → 1 ve anahtar loglanmaz', async () => {
-    const { result } = await deploy(happy, { apiToken: 'yanlis-anahtar' })
+  it('Dokploy yetkisiz (401) → 1 ve anahtar hiçbir çıktıya yazılmaz', async () => {
+    const { result, lines } = await deploy(happy, { apiToken: 'yanlis-anahtar' })
     expect(result.ok).toBe(false)
     expect(result.summary).toMatch(/HTTP 401/)
-    expect(result.summary).not.toContain('yanlis-anahtar')
+    expect(`${result.summary}\n${lines.join('\n')}`).not.toContain('yanlis-anahtar')
   })
 })
 
-describe('shaMatches', () => {
-  it('tam SHA, kısa SHA (rollback) ve eşleşmeyenler', () => {
+describe('canlı sürüme göre yayın kararı (skipUnchanged)', () => {
+  const docsOnly = () => ['docs/plans/parca-1.md', 'apps/mobile/app.json']
+
+  it('canlıdan bu yana yalnızca belge/mobil değiştiyse Dokploy tetiklenmez', async () => {
+    const { result, posts } = await deploy(happy, { skipUnchanged: true }, docsOnly)
+    expect(result.ok).toBe(true)
+    expect(result.summary).toMatch(/^YAYIN GEREKMEDİ: canlıdaki abcdefa/)
+    expect(posts).toEqual([])
+  })
+
+  it('kod değiştiyse yayın yapılır', async () => {
+    const { result, posts } = await deploy(happy, { skipUnchanged: true }, () => [
+      'docs/x.md',
+      'docker-compose.yml',
+    ])
+    expect(result.ok).toBe(true)
+    expect(result.summary).toMatch(/^YAYINLANDI/)
+    expect(posts).toHaveLength(1)
+  })
+
+  it('fark bilinmiyorsa (git hatası) yayın yapılır', async () => {
+    const { result, posts } = await deploy(happy, { skipUnchanged: true }, () => null)
+    expect(result.summary).toMatch(/^YAYINLANDI/)
+    expect(posts).toHaveLength(1)
+  })
+
+  it('bu commit zaten canlıdaysa yayın gerekmez', async () => {
+    const { result, posts } = await deploy(happy, { skipUnchanged: true, expectedSha: OLD_SHA })
+    expect(result.summary).toMatch(/^YAYIN GEREKMEDİ: abcdefa zaten canlıda/)
+    expect(posts).toEqual([])
+  })
+
+  it('skipUnchanged kapalıyken (rollback) her zaman yayın yapılır', async () => {
+    const { result, posts } = await deploy(happy, { skipUnchanged: false }, docsOnly)
+    expect(result.summary).toMatch(/^YAYINLANDI/)
+    expect(posts).toHaveLength(1)
+  })
+})
+
+describe('yardımcılar', () => {
+  it('shaMatches: tam SHA, kısa SHA (rollback) ve eşleşmeyenler', () => {
     expect(shaMatches(NEW_SHA, NEW_SHA)).toBe(true)
     expect(shaMatches(NEW_SHA, '1234567')).toBe(true)
     expect(shaMatches(NEW_SHA.toUpperCase(), NEW_SHA)).toBe(true)
@@ -214,6 +297,14 @@ describe('shaMatches', () => {
     expect(shaMatches('123456', NEW_SHA)).toBe(false)
     expect(shaMatches('dev', NEW_SHA)).toBe(false)
     expect(shaMatches(undefined, NEW_SHA)).toBe(false)
+  })
+
+  it('isNonDeployPath: yalnızca docs/ ve apps/mobile/', () => {
+    expect(isNonDeployPath('docs/DEPLOY_DOKPLOY.md')).toBe(true)
+    expect(isNonDeployPath('apps/mobile/app.json')).toBe(true)
+    expect(isNonDeployPath('README.md')).toBe(false)
+    expect(isNonDeployPath('deploy/dokploy.env.example')).toBe(false)
+    expect(isNonDeployPath('apps/web/src/app/layout.tsx')).toBe(false)
   })
 })
 
@@ -241,15 +332,20 @@ describe('planFromEnv', () => {
     expect(plan.kind === 'error' && plan.summary).toMatch(/DOKPLOY_API_TOKEN, WEB_URL/)
   })
 
-  it('https olmayan adresleri ve geçersiz SHA değerini reddeder', () => {
+  it('https olmayan adresleri, geçersiz SHA ve çok satırlı anahtarı reddeder', () => {
     expect(planFromEnv({ ...complete, DOKPLOY_URL: 'http://72.62.53.122:3000' }).kind).toBe('error')
     expect(planFromEnv({ ...complete, EXPECTED_SHA: 'main' }).kind).toBe('error')
+    const badToken = planFromEnv({ ...complete, DOKPLOY_API_TOKEN: 'abc\ndef' })
+    expect(badToken.kind).toBe('error')
+    expect(badToken.kind === 'error' && badToken.summary).not.toContain('abc')
   })
 
-  it('başlığı gh-<sha7>-<run_id> olarak kurar', () => {
+  it('başlığı gh-<sha7>-<run_id> olarak kurar; skipUnchanged yalnızca açıkça istenirse', () => {
     const plan = planFromEnv(complete)
     expect(plan.kind).toBe('run')
     expect(plan.kind === 'run' && plan.config.title).toBe('gh-1234567-42')
-    expect(plan.kind === 'run' && plan.config.pollIntervalMs).toBe(10_000)
+    expect(plan.kind === 'run' && plan.config.skipUnchanged).toBe(false)
+    const release = planFromEnv({ ...complete, SKIP_UNCHANGED: 'true' })
+    expect(release.kind === 'run' && release.config.skipUnchanged).toBe(true)
   })
 })

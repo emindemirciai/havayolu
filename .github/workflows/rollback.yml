@@ -1,8 +1,9 @@
 name: Rollback
 
 # Seçilen commit'in imajlarını (sha-<7>) :main olarak yeniden etiketler, Dokploy'u tetikler ve
-# deploy.yml ile aynı doğrulamayı yapar (infra.md → rollback.yml, D-064). Sonraki birleştirme
-# main'i yeniden ileri alır. Migration'lar geri alınmaz: şema değişiklikleri geriye uyumludur.
+# deploy.yml ile aynı doğrulamayı yapar (infra.md → rollback.yml, D-064). Sonraki birleştirme (belge
+# değişikliği bile) canlıdan farkı yayınlayarak main'i yeniden ileri alır; sorunlu değişiklik önce bir
+# PR ile geri alınmalıdır. Migration'lar geri alınmaz: şema değişiklikleri geriye uyumludur.
 on:
   workflow_dispatch:
     inputs:
@@ -50,6 +51,13 @@ jobs:
         env:
           SHORT_SHA: ${{ steps.sha.outputs.short }}
         run: |
+          # Önce üç imajın da var olduğu doğrulanır; biri eksikse hiçbir etiket taşınmaz.
+          for app in web api worker; do
+            if ! docker buildx imagetools inspect "${IMAGE_PREFIX}-${app}:sha-${SHORT_SHA}" > /dev/null; then
+              echo "::error::${IMAGE_PREFIX}-${app}:sha-${SHORT_SHA} bulunamadı (main'de deploy işi derlemiş bir commit seçilmeli)"
+              exit 1
+            fi
+          done
           for app in web api worker; do
             docker buildx imagetools create \
               --tag "${IMAGE_PREFIX}-${app}:main" \

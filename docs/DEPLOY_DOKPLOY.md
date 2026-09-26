@@ -21,27 +21,44 @@ Kurulum bitene kadar CI yeşil kalır: imajlar derlenir, yayın adımı "YAYINLA
    - Yoksa DNS'e örneğin `panel.havayolu.live` için A kaydı ekle ve Settings → Web Server → Domain'e gir.
    - Bu adres GitHub'daki `DOKPLOY_URL` olacak.
 3. **Let's Encrypt e-postası:** Settings → Web Server'da gir. Varsayılan `test@localhost.com`'dur, değiştir.
-4. **Güvenlik duvarı (SSH):** Docker, yayınladığı portlarda ufw'yi atladığı için `ufw-docker` gerekir. Yalnızca 22, 80 ve 443 açık kalır.
-   - **Önce** diğer projelerin dışarıya doğrudan açtığı portları not al; `docker ps` çıktısındaki PORTS sütununa bak.
-   - ufw-docker kurulduktan sonra bu portlar kapanır. Gerekiyorsa her birine `sudo ufw-docker allow <konteyner> <port>` ile tek tek izin ver.
+4. **Güvenlik duvarı (SSH):** Docker, yayınladığı portlarda ufw'yi atladığı için `ufw-docker` gerekir. Sonuçta dışarıya yalnızca 22, 80 ve 443 açık kalır; Dokploy paneli (3000) kapanır.
+   - **Önemli:** `ufw-docker` kurulunca konteynerlerin yayınladığı **bütün** portlar dışarıya kapanır, Traefik'in 80/443'ü dahil. `ufw allow 80/443` yalnızca sunucunun kendi portlarını açar, Traefik konteynerine ulaşmaz. Bu yüzden aşağıdaki `ufw route allow` satırları şarttır; atlanırsa VPS'teki **bütün siteler** (diğer projeler ve panel dahil) erişilemez olur.
+   - **Önce** diğer projelerin dışarıya doğrudan açtığı portları not al; `docker ps` çıktısındaki PORTS sütununa bak (80/443 dışındakiler). Her birine sonra `sudo ufw-docker allow <konteyner> <port>` ile tek tek izin vermen gerekir.
+   - Bu adımlar boyunca **SSH oturumunu açık tut**. Bir şey ters giderse `sudo ufw disable` her şeyi eski hâline döndürür.
+
+   Sunucunun kendi portları:
 
    ```bash
    sudo ufw allow 22/tcp && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
    ```
 
+   ufw-docker (sabitlenmiş sürüm 251123; indirilen dosyanın SHA-256 değeri kontrol edilir, uyuşmazsa kurulmaz):
+
    ```bash
-   sudo wget -O /usr/local/bin/ufw-docker https://github.com/chaifeng/ufw-docker/raw/master/ufw-docker && sudo chmod +x /usr/local/bin/ufw-docker && sudo ufw-docker install
+   sudo wget -O /usr/local/bin/ufw-docker https://raw.githubusercontent.com/chaifeng/ufw-docker/78366b6afe6e566cd53f7e55341889c2e3c863e7/ufw-docker && echo "c3e5f0bf6061a3a2e7d7ac06abc80665707d2f4c91e90d76f22e4168863fb472  /usr/local/bin/ufw-docker" | sha256sum -c - && sudo chmod +x /usr/local/bin/ufw-docker && sudo ufw-docker install
    ```
+
+   Traefik'in konteyner portları (80, 443 ve HTTP/3 için 443/udp):
+
+   ```bash
+   sudo ufw route allow proto tcp from any to any port 80 && sudo ufw route allow proto tcp from any to any port 443 && sudo ufw route allow proto udp from any to any port 443
+   ```
+
+   Etkinleştir:
 
    ```bash
    sudo ufw enable && sudo systemctl restart ufw
    ```
 
-   Doğrulama: **başka bir ağdan**, örneğin telefonun mobil verisiyle şunu çalıştır. Zaman aşımına uğramalı:
+   **Doğrulama**, SSH oturumu hâlâ açıkken ve **başka bir ağdan** (ör. telefonun mobil verisiyle):
+   - Panel ve diğer projelerin siteleri açılmaya devam etmeli; örneğin panel alan adın için `curl -sI https://<panel alan adın>` bir HTTP yanıtı dönmeli.
+   - Panel portu kapalı olmalı; şu komut zaman aşımına uğramalı:
 
-   ```bash
-   curl -m 5 http://72.62.53.122:3000
-   ```
+     ```bash
+     curl -m 5 http://72.62.53.122:3000
+     ```
+
+   - Siteler açılmıyorsa hemen `sudo ufw disable` çalıştır ve bana haber ver.
 
 ## 2. Bellek
 - `docker stats --no-stream` ile mevcut kullanımı gör.
@@ -98,7 +115,7 @@ Compose servisinin Domains sekmesinde her satır için HTTPS açık, sertifika L
 | `hy-web` | `admin.havayolu.live` | 3000 |
 | `hy-api` | `api.havayolu.live` | 4000 |
 
-Alan adı değişikliğinden sonra yeniden deploy gerekir.
+Şimdi Dokploy'dan deploy etme: ilk yayın 10. adımdadır ve alan adlarını da o uygular. Sonrasında alan adı değişiklikleri Dokploy'da Deploy ile ya da `deploy.yml`'yi `dry_run=false` ile yeniden çalıştırarak uygulanır.
 
 ## 7. Analiz uygulaması (Siteni Analiz Et)
 1. **Servis:** Aynı projede ikinci bir **Compose** servisi, ad `analiz`.
@@ -115,6 +132,7 @@ Alan adı değişikliğinden sonra yeniden deploy gerekir.
    - süre **90 gün**
    - organizasyonu seç
    - Bitiş tarihini ACTIVATION'a yaz.
+   - Anahtarın isteğe bağlı istek sınırını (rate limit) kapalı bırak; açarsan bir yayın ~100 istek yaptığı için en az 100 istek/15 dk izin ver.
 2. **Önerilen:** Anahtarı yalnızca bu projeye erişimi olan bir "deploy-bot" üyesiyle üret.
    - Kapsamı dene: anahtarla başka bir projenin servisini okumaya çalış, 401/403 beklenir.
    - 200 dönerse anahtarı kullanma, bana haber ver.
@@ -182,16 +200,26 @@ Bundan sonra her birleşen PR aynı yolu kendiliğinden izler.
 
 ## 12. Bilmen gerekenler
 - **Kesinti:** Yayın sırasında birkaç saniyelik kesinti olur. Compose yayını sıfır kesintili değildir.
+- **Yalnızca belge değişikliği:** `main`'e her birleşme yayın işini çalıştırır. Canlıdaki sürümden bu yana yalnızca `docs/` ya da `apps/mobile/` değiştiyse Dokploy tetiklenmez ("YAYIN GEREKMEDİ"); kesinti olmaz.
 - **Geri alma:** Önceki bir commit'e dönmek için:
 
   ```bash
   gh workflow run rollback.yml --repo emindemirciai/havayolu --ref main -f sha=<en az 7 karakter>
   ```
 
+  - SHA, `main`'de deploy işinin imaj derlediği bir commit olmalı (PR dalındaki bir commit değil). İmajlardan biri yoksa hiçbir etiket taşınmaz, iş kırmızı biter.
   - Seçilen imajlar `:main` olur ve aynı doğrulama yapılır.
   - Veritabanı şeması geri alınmaz; şema değişiklikleri geriye uyumludur.
-  - Sonraki birleşme `main`'i yeniden ileri alır.
+  - Sonraki birleşme, belge değişikliği bile olsa, canlıdan farkı yayınlar ve sorunlu kodu geri getirir. Bu yüzden geri aldıktan sonra sorunlu değişikliği önce bir PR ile geri al (revert).
 - **Parola unutulursa:** Bir parola `#…#` talimatıyla kaldıysa API açılmaz; Dokploy logunda hangisi olduğu yazar.
-  - Postgres parolası yanlış girildiyse ve henüz veri yoksa en kolayı `hy_pgdata` volume'unu silip yeniden deploy etmektir.
-  - Bu işlem veriyi siler; veri varsa önce bana sor.
+  - Postgres parolası ilk açılışta veritabanına yazılır. Yanlış girildiyse ve **henüz veri yoksa**:
+    1. Dokploy'da havayolu compose'unu durdur (Stop).
+    2. Sunucuda volume'u bul ve adının başının Dokploy'daki uygulama adıyla (appName) eşleştiğini kontrol et:
+
+       ```bash
+       docker volume ls --filter name=_hy_pgdata
+       ```
+
+    3. `docker volume rm <appName>_hy_pgdata` ile sil, Environment'taki parolayı düzelt ve yeniden deploy et.
+  - Bu işlem veritabanındaki her şeyi siler; veri varsa önce bana sor.
 - **İzleme:** Kendi kurduğun Dokploy'da geçmiş metrik ve uyarı yok. Dış bir uptime kontrolü, örneğin UptimeRobot, dakikada bir `https://havayolu.live` ve `https://api.havayolu.live/ready` adreslerine bakmalı (ACTIVATION).

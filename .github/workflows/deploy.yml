@@ -4,8 +4,9 @@ name: Deploy
 # Sözleşme: docs/spec/infra.md → deploy.yml ve D-064.
 # - build: üç imaj paralel derlenir ve yalnızca sha-<7> etiketiyle GHCR'a gönderilir.
 # - release: seri çalışır (deploy-prod). Commit hâlâ main'in ucundaysa :main etiketini bu derlemeye
-#   taşır, Dokploy'u tetikler ve /version + /ready ile doğrular. DEPLOY_ENABLED=true olana kadar
-#   yayın adımı özetle atlanır ve iş yeşil kalır.
+#   taşır, Dokploy'u tetikler ve /version + /ready ile doğrular. Canlıdan bu yana yalnızca belge ya
+#   da mobil uygulama değiştiyse Dokploy tetiklenmez. DEPLOY_ENABLED=true olana kadar yayın adımı
+#   özetle atlanır ve iş yeşil kalır.
 on:
   workflow_call:
     inputs:
@@ -79,11 +80,21 @@ jobs:
       group: deploy-prod
       cancel-in-progress: false
     steps:
+      # Tam geçmiş: deploy script'i canlıdaki sürümle bu commit arasındaki farka bakar.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # main'e her push kendi yayın işini çalıştırır (ci.yml), bu yüzden daha yeni bir uç varsa
+      # onun işi bu commit'i de kapsayarak yayınlar. main okunamazsa iş kırmızıya döner.
       - name: Is this commit still the tip of main?
         id: head
+        shell: bash
         run: |
           tip="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ ! "$tip" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::main'in ucu okunamadı"
+            exit 1
+          fi
           if [ "$tip" = "$GITHUB_SHA" ]; then
             echo "latest=true" >> "$GITHUB_OUTPUT"
           else
@@ -91,7 +102,7 @@ jobs:
             {
               echo "### Dokploy yayını"
               echo
-              echo "ATLANDI: main'de daha yeni bir commit var (${tip:0:7}); o commit yayınlanacak."
+              echo "ATLANDI: main'de daha yeni bir commit var (${tip:0:7}); onun yayın işi bu commit'i de kapsar."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
       - if: steps.head.outputs.latest == 'true'
@@ -130,4 +141,6 @@ jobs:
           API_URL: ${{ vars.API_URL }}
           WEB_URL: ${{ vars.WEB_URL }}
           EXPECTED_SHA: ${{ github.sha }}
+          # Canlıdan bu yana yalnızca docs/ ya da apps/mobile/ değiştiyse Dokploy tetiklenmez.
+          SKIP_UNCHANGED: 'true'
         run: pnpm run deploy:dokploy

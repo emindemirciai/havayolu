@@ -54,21 +54,21 @@ pnpm dev
 - `docs/DECISIONS.md`: kararlar ve gerekçeleri
 
 ### İstatistik (v0.4.0)
-Git'te 165 dosya, **10.389 satır**. Bunun 6.098 satırı kod (TypeScript, TSX, CSS, JS), 2.518 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
+Git'te 165 dosya, **10.615 satır**. Bunun 6.280 satırı kod (TypeScript, TSX, CSS, JS), 2.561 satırı belgedir. Lockfile ve `docs/research/` hariç tutulur. Güncel değer için `pnpm stats` çalıştır.
 
 | Alan | Satır |
 |---|---|
-| docs | 1.970 |
+| docs | 2.013 |
 | apps/web | 1.741 |
 | apps/api | 1.723 |
-| scripts | 914 |
+| scripts | 1.096 |
 | packages/shared | 604 |
 | apps/worker | 411 |
 | packages/db | 372 |
 | packages/i18n | 359 |
 | packages/providers | 197 |
 | packages/geo | 152 |
-| diğer (kök, deploy, .claude, .github) | 1.946 |
+| diğer (kök, deploy, .claude, .github) | 1.947 |
 
 ### Lisans, veri ve atıflar
 - Kod [MIT lisansı](LICENSE) ile lisanslanmıştır: © 2026 [emindemirciai](https://github.com/emindemirciai). Kodun tüm kopyaları ya da önemli bölümleri telif bildirimini ve lisans metnini içermek zorundadır; bunlar olmadan kopyalamak ya da dağıtmak lisans ve telif hakkı ihlalidir. **havayolu** adı ve logosu MIT kapsamında değildir, hakları saklıdır. Aynı bildirim sitenin sayfa kaynağında da yer alır.
@@ -127,7 +127,7 @@ Then open `http://localhost:3100/durum` and `http://localhost:3100/yenilikler`. 
 - `docs/DECISIONS.md`: decisions and rationale
 
 ### Stats (v0.4.0)
-165 files and **10,389 lines** in git: 6,098 lines of code (TypeScript, TSX, CSS, JS) and 2,518 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
+165 files and **10,615 lines** in git: 6,280 lines of code (TypeScript, TSX, CSS, JS) and 2,561 lines of documentation. The lockfile and `docs/research/` are excluded. Run `pnpm stats` for current numbers.
 
 ### License, data and attribution
 - Code is licensed under the [MIT License](LICENSE): © 2026 [emindemirciai](https://github.com/emindemirciai). All copies or substantial portions of the code must include the copyright notice and license text; copying or distributing without them infringes the license and the copyright. The **havayolu** name and logo are not covered by the MIT License; rights reserved. The same notice appears in the page source of the site.
