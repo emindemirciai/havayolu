@@ -98,12 +98,14 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
   6. `deploy`: `uses: ./.github/workflows/deploy.yml`, `secrets: inherit`, `permissions: {contents: read, packages: write}` (çağrılan workflow izin yükseltemez), `needs: [changes, …tüm kontroller]`. Koşul: `if: github.event_name=='push' && github.ref=='refs/heads/main' && needs.changes.outputs.deploy=='true'`.
 - Workflow düzeyinde `paths-ignore` ve `workflow_run` kullanılmaz.
 
-**`.github/workflows/deploy.yml`** (`on: workflow_call` + `workflow_dispatch` [girdi `dry_run`, varsayılan `true`])
-- `concurrency: {group: deploy-prod, cancel-in-progress: false}`.
-- **Build:** GHCR'a `GITHUB_TOKEN` ile giriş yapılır. 3 imaj `docker/build-push-action` ile derlenir: `linux/amd64`, `cache-from/to: type=gha`, etiketler `sha-<7>` ve `main`.
-- **Deploy koşulu:** `vars.DEPLOY_ENABLED == 'true'` ve secrets tanımlı değilse deploy adımı atlanır.
-  - İş yeşil kalır, iş özetine (`$GITHUB_STEP_SUMMARY`) "YAYINLANMADI: Dokploy kurulumu tamamlanmadı" yazılır.
-  - Kurulum bitince kullanıcı `DEPLOY_ENABLED=true` yapar. Secrets tanımlıyken deploy başarısız olursa iş kırmızıya döner.
+**`.github/workflows/deploy.yml`** (`on: workflow_call` + `workflow_dispatch` [girdi `dry_run`, elle varsayılan `true`]; D-064)
+- **`build` (matris: web, api, worker):** GHCR'a `GITHUB_TOKEN` ile giriş yapılır. İmajlar `docker/build-push-action` ile derlenir: `linux/amd64`, `cache-from/to: type=gha` (uygulama başına scope), build-arg `GIT_SHA=<tam sha>` ve `BUILD_TIME`. **Yalnızca `sha-<7>` etiketi** gönderilir.
+- **`release`** (`dry_run` değilse; `concurrency: {group: deploy-prod, cancel-in-progress: false}`, rollback ile ortak):
+  1. Commit hâlâ `main`'in ucunda mı bakılır (`git ls-remote`). Değilse iş özetine "ATLANDI: daha yeni commit" yazılır; yeni commit kendi yayınını yapar. Böylece geç biten eski bir derleme yenisinin üstüne yazamaz.
+  2. `docker buildx imagetools create` ile üç imajın `:main` etiketi `sha-<7>`'ye taşınır (yeniden derleme yok).
+  3. `pnpm run deploy:dokploy` (aşağıdaki sözleşme).
+- **Deploy koşulu:** `vars.DEPLOY_ENABLED` `true` değilse script yayını atlar. İş yeşil kalır, iş özetine (`$GITHUB_STEP_SUMMARY`) "YAYINLANMADI: Dokploy kurulumu tamamlanmadı" yazılır; `:main` yine de taşınır.
+  - Kurulum bitince kullanıcı `DEPLOY_ENABLED=true` yapar. `DEPLOY_ENABLED=true` iken secret ya da variable eksikse, adresler `https://` değilse ya da deploy başarısız olursa iş kırmızıya döner. Eksik ayarların yalnızca adları yazılır.
 - **Deploy sözleşmesi** (`scripts/deploy-dokploy.mts`):
   1. Tetiklemeden önce `GET $DOKPLOY_URL/api/deployment.allByCompose?composeId=…` ile mevcut deployment id'leri kaydedilir.
   2. `POST $DOKPLOY_URL/api/compose.deploy` çağrılır. Başlıklar: `x-api-key: $DOKPLOY_API_TOKEN`, `Content-Type: application/json`. Gövde: `{"composeId":"…","title":"gh-<sha7>-<run_id>"}`.
@@ -112,12 +114,15 @@ Sunucu: Hostinger **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe). Üzerinde Dokploy �
      - Dokploy son 10 kaydı tutar.
      - Başlık commit mesajıyla, `description` klonlama anındaki HEAD'in `Commit: <SHA>` değeriyle değişir; yalnızca bilgi olarak loglanır.
      - `error` ya da `cancelled` → çıkış 1. `errorMessage` çoğu zaman boştur.
-  5. Ardından `${API_URL}/version` ve `${WEB_URL}/api/version` yeni `GIT_SHA`'yı döndürene ve `/ready` 200 verene kadar yoklanır. Olmazsa çıkış 1.
-  6. Hata yolları (error, eski SHA, 503) stub Dokploy + stub `/version` sunucusuna karşı sahte saatle test edilir. Üretimde bilerek bozuk imaj yayınlanmaz.
+  5. Ardından `${API_URL}/version` ve `${WEB_URL}/api/version` yeni `GIT_SHA`'yı döndürene ve `/ready` 200 verene kadar 10 sn arayla en fazla 15 dk yoklanır. Yayın sırasında ulaşılamamak bekleme sebebidir. Olmazsa çıkış 1.
+  6. Hata yolları (error, cancelled, kuyrukta zaman aşımı, eski SHA, 503, 401) stub Dokploy + stub `/version` sunucusuna karşı sahte saatle test edilir (`pnpm test:scripts`, CI `checks`). Üretimde bilerek bozuk imaj yayınlanmaz.
+  7. Deploy API anahtarı hiçbir çıktıya yazılmaz; istek gövdesi yalnızca `composeId` ve `title` taşır.
 - **GitHub secrets:** `DOKPLOY_URL` (HTTPS panel adresi; `http://IP:3000` değil), `DOKPLOY_API_TOKEN`, `DOKPLOY_COMPOSE_ID`. **GitHub variables:** `WEB_URL`, `API_URL`, `DEPLOY_ENABLED`.
 - **Action sürümleri (node24):** `actions/checkout@v7`, `actions/setup-node@v7`, `pnpm/action-setup@v6`, `docker/setup-buildx-action@v4`, `docker/login-action@v4`, `docker/metadata-action@v6`, `docker/build-push-action@v7`, `dorny/paths-filter@v4`. Üçüncü taraf action'lar commit SHA ile sabitlenir.
 
-**`rollback.yml`** (`workflow_dispatch`, girdi `sha`): seçilen `sha-…` imajlarını `docker buildx imagetools create` ile `:main` olarak yeniden etiketler, ardından aynı deploy ve doğrulama adımlarını çalıştırır.
+**`rollback.yml`** (`workflow_dispatch`, girdi `sha`, 7–40 onaltılık karakter; girdi kabuğa yalnızca env ile geçer): seçilen `sha-<7>` imajlarını `docker buildx imagetools create` ile `:main` olarak yeniden etiketler, ardından aynı deploy ve doğrulama adımlarını çalıştırır (`deploy-prod` sırasında). Beklenen SHA kısa verilebilir; doğrulama baş eşleşmesiyle yapılır. Migration'lar geri alınmaz. Dokploy compose dosyasını `main`'in ucundan klonlar, yani eski imajlar güncel compose ile çalışır.
+
+**`actionlint`** (CI işi): `rhysd/actionlint:1.7.12` imajı digest'iyle sabitlenerek çalıştırılır; `run:` betikleri shellcheck'ten de geçer.
 
 ## Yayın davranışı ve kesinti
 - Compose deploy'u **sıfır kesintili değildir.** web ve api için birkaç saniyelik kesinti kabul edilir ve DEPLOY_DOKPLOY.md'de açıkça yazılır.
